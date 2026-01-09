@@ -96,7 +96,7 @@ class App {
         <label for="audioInput" class="custom-file-upload">
             Load Audio
         </label>
-        <input type="file" id="audioInput" accept="audio/*" style="display: none;">
+        <input type="file" id="audioInput" accept="audio/*, .mp3, .wav, .m4a, .aac, .ogg" style="display: none;">
         
         <div style="flex-basis: 100%; height: 10px;"></div> <!-- Spacer -->
         
@@ -104,7 +104,7 @@ class App {
         <label for="photoInput" class="custom-file-upload" style="border-color: #ff00ff; color: #ff00ff;">
             Upload Photo
         </label>
-        <input type="file" id="photoInput" accept="image/*" style="display: none;">
+        <input type="file" id="photoInput" accept="image/*, .jpg, .jpeg, .png, .webp" style="display: none;">
         
         <select id="photoModeSelect">
             <option value="Delaunay">Mode: Low-poly Triangle</option>
