@@ -70,6 +70,50 @@ class App {
         <!-- Sub Controls -->
         <div id="subControls" class="control-group"></div>
 
+        <!-- MIDI Settings (v1.3) -->
+        <div style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
+            <div class="control-row">
+                <label style="font-weight:bold; color:#0ff;">MIDI Settings</label>
+                <button id="toggleMidiSettings" style="font-size:0.7rem; padding:2px 8px;">Show/Hide</button>
+            </div>
+            <div id="midiSettingsPanel" style="display:none; margin-top:10px;">
+                <div class="control-row">
+                    <label>MIDI Input:</label>
+                    <select id="midiInputSelect">
+                        <option value="all">All Inputs</option>
+                    </select>
+                </div>
+                <div class="control-row">
+                    <label>MIDI Channel:</label>
+                    <select id="midiChannelSelect">
+                        <option value="all">All Channels</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                        <option value="15">15</option>
+                        <option value="16">16</option>
+                    </select>
+                </div>
+                <div style="font-size:0.7rem; color:#888; margin:5px 0;">
+                    ℹ️ Bluetooth MIDI: OS側でペアリング後、ページを再読み込みしてください
+                </div>
+                <div class="control-row">
+                    <button id="showCCMapping" style="width:100%; font-size:0.8rem;">CC Mapping Settings</button>
+                </div>
+            </div>
+        </div>
+
         <div class="control-row" style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
             <label><input type="checkbox" id="autoPilotCheck"> Auto Pilot</label>
         </div>
@@ -118,8 +162,150 @@ class App {
       }
     });
 
+    // MIDI Settings Events (v1.3)
+    document.getElementById('toggleMidiSettings').addEventListener('click', () => {
+      const panel = document.getElementById('midiSettingsPanel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('midiInputSelect').addEventListener('change', (e) => {
+      this.midi.setInput(e.target.value);
+    });
+
+    document.getElementById('midiChannelSelect').addEventListener('change', (e) => {
+      this.midi.setChannel(e.target.value);
+    });
+
+    document.getElementById('showCCMapping').addEventListener('click', () => {
+      this.showCCMappingModal();
+    });
+
+    // MIDI Input List更新コールバック
+    this.midi.onInputListChanged = (inputs) => {
+      const select = document.getElementById('midiInputSelect');
+      select.innerHTML = '<option value="all">All Inputs</option>';
+      inputs.forEach(input => {
+        const option = document.createElement('option');
+        option.value = input.id;
+        option.textContent = input.name;
+        select.appendChild(option);
+      });
+      select.value = this.midi.selectedInputId;
+    };
+
+    // MIDI設定を復元
+    document.getElementById('midiChannelSelect').value = this.midi.selectedChannel;
+
     this.updateSubUI('3D');
   }
+
+  showCCMappingModal() {
+    // CC Mappingモーダルを作成
+    const modal = document.createElement('div');
+    modal.id = 'ccMappingModal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      border: 2px solid #0ff;
+      padding: 20px;
+      z-index: 10000;
+      max-height: 80vh;
+      overflow-y: auto;
+      min-width: 400px;
+    `;
+
+    const ccParams = [
+      { key: 'cc1', label: 'CC1: Intensity' },
+      { key: 'cc2', label: 'CC2: Hue / Palette' },
+      { key: 'cc3', label: 'CC3: Speed' },
+      { key: 'cc4', label: 'CC4: FX Amount' },
+      { key: 'cc5', label: 'CC5: Trails' },
+      { key: 'cc6', label: 'CC6: Glow / Emissive' },
+      { key: 'cc7', label: 'CC7: Contrast' },
+      { key: 'cc8', label: 'CC8: Zoom' },
+      { key: 'cc9', label: 'CC9: Density' },
+      { key: 'cc10', label: 'CC10: Size Variance' },
+      { key: 'cc11', label: 'CC11: Noise Scale' },
+      { key: 'cc12', label: 'CC12: Curl / Flow' },
+      { key: 'cc13', label: 'CC13: Jitter' },
+      { key: 'cc14', label: 'CC14: Beat Sensitivity' },
+      { key: 'cc15', label: 'CC15: Background Fade' },
+      { key: 'cc16', label: 'CC16: Preset-specific' }
+    ];
+
+    let html = '<h3 style="color:#0ff; margin-top:0;">CC Mapping Settings</h3>';
+    html += '<p style="font-size:0.8rem; color:#888;">各パラメータにMIDI CCを割り当てます。Learnボタンを押してCCを送信してください。</p>';
+    html += '<div style="margin-bottom:15px;">';
+
+    ccParams.forEach(param => {
+      // 現在のCC番号を取得
+      let currentCC = 'None';
+      for (let [ccNum, paramName] of Object.entries(this.midi.ccMapping)) {
+        if (paramName === param.key) {
+          currentCC = `CC${ccNum}`;
+          break;
+        }
+      }
+
+      html += `
+        <div style="display:flex; align-items:center; margin:8px 0; font-size:0.85rem;">
+          <span style="flex:1; color:#ccc;">${param.label}</span>
+          <span id="ccMap_${param.key}" style="width:60px; text-align:center; color:#0f0;">${currentCC}</span>
+          <button class="learnBtn" data-param="${param.key}" style="margin-left:10px; font-size:0.7rem; padding:3px 10px;">Learn</button>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+    html += '<div style="display:flex; gap:10px; margin-top:15px;">';
+    html += '<button id="resetCCMapping" style="flex:1; padding:8px;">Reset to Default</button>';
+    html += '<button id="closeCCMapping" style="flex:1; padding:8px; background:#444;">Close</button>';
+    html += '</div>';
+
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+
+    // Learn ボタン
+    modal.querySelectorAll('.learnBtn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const param = e.target.getAttribute('data-param');
+        this.midi.startLearn(param);
+        e.target.textContent = 'Waiting...';
+        e.target.style.background = '#ff0';
+        e.target.style.color = '#000';
+      });
+    });
+
+    // MIDI Learn完了コールバック
+    this.midi.onLearnComplete = (param, ccNum) => {
+      const span = document.getElementById(`ccMap_${param}`);
+      if (span) span.textContent = `CC${ccNum}`;
+
+      // ボタンをリセット
+      modal.querySelectorAll('.learnBtn').forEach(btn => {
+        btn.textContent = 'Learn';
+        btn.style.background = '';
+        btn.style.color = '';
+      });
+    };
+
+    // Reset ボタン
+    document.getElementById('resetCCMapping').addEventListener('click', () => {
+      this.midi.resetCCMapping();
+      modal.remove();
+      this.showCCMappingModal(); // 再表示
+    });
+
+    // Close ボタン
+    document.getElementById('closeCCMapping').addEventListener('click', () => {
+      this.midi.cancelLearn();
+      modal.remove();
+    });
+  }
+
 
   updateSubUI(mode) {
     const container = document.getElementById('subControls');
@@ -266,7 +452,7 @@ class App {
 
     const m = this.midi.ccs;
     document.getElementById('midiMonitor').innerText =
-      `CC1:${m.cc1.toFixed(2)} CC2:${m.cc2.toFixed(2)} CC3:${m.cc3.toFixed(2)} CC4:${m.cc4.toFixed(2)}`;
+      `CC1:${m.cc1.toFixed(2)} CC2:${m.cc2.toFixed(2)} CC3:${m.cc3.toFixed(2)} CC4:${m.cc4.toFixed(2)} | CC5:${m.cc5.toFixed(2)} CC6:${m.cc6.toFixed(2)} CC7:${m.cc7.toFixed(2)} CC8:${m.cc8.toFixed(2)}`;
   }
 }
 

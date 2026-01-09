@@ -206,12 +206,14 @@ export class VisualEffectManager {
         this.effectMaterial.uniforms.modeParam.value = 0;
         this.effectMaterial.uniforms.subParam.value = midi.cc4;
 
+        this.renderer.setRenderTarget(this.renderTarget);
+        this.renderer.clear();
         if (this.effectMaterial.uniforms.vMode.value === 0) {
-            this.renderer.setRenderTarget(null);
             this.renderer.render(this.scene, this.camera);
         } else {
-            this.renderer.setRenderTarget(null);
             this.renderer.render(this.fsQuadScene, this.fsQuadCamera);
         }
+
+        return this.renderTarget.texture;
     }
 }

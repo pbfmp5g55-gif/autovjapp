@@ -3,13 +3,22 @@ import { VJLayer } from './VJLayer';
 import { VisualEffectManager } from './VisualEffectManager';
 import { PhotoPolygonizer } from './PhotoPolygonizer';
 import { P5Manager } from './P5Manager';
-import { AudioReactiveParticles } from './AudioReactiveParticles'; // Import
+import { AudioReactiveParticles } from './AudioReactiveParticles';
+import { CommonEffects } from './CommonEffects'; // v1.3
 
 export class SceneManager {
     constructor() {
         this.scene = new THREE.Scene();
         // Fog
-        this.scene.fog = new THREE.FogExp2(0x000000, 0.02);
+        this.scene.fog = new THREE.FogExp2(0x000000, 0.01);
+
+        // Lighting (Ensure lights are present)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 0.5 -> 0.8
+        this.scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 1.5); // 1.0 -> 1.5
+        pointLight.position.set(5, 5, 10);
+        this.scene.add(pointLight);
 
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.camera.position.z = 5;
@@ -34,10 +43,14 @@ export class SceneManager {
 
         // Managers
         this.effects = new VisualEffectManager(this.renderer, this.scene, this.camera);
+        this.commonEffects = new CommonEffects(this.renderer, this.scene, this.camera); // v1.3
         this.p5Manager = new P5Manager('p5-container');
         this.p5Manager.init(); // Initialize p5 instance
         this.photoPolygonizer = new PhotoPolygonizer(this.scene);
         this.particleSpawner = new AudioReactiveParticles(this.scene);
+
+        // Mode1改善用：呼吸アニメーション
+        this.breathPhase = 0;
 
         this.setupLayers();
 
@@ -273,7 +286,21 @@ export class SceneManager {
     }
 
     // Main Loop
-    update(audio, midi) {
+    update(audio, midiRaw) {
+        // Mode 1 (3D) の場合の明るさ補正
+        // ユーザー要望: Mode 1のみCC制限を入れたい（暗すぎて見えないのを防ぐ）
+        const midi = { ...midiRaw }; // シャローコピーして使用
+
+        if (this.currentMode === '3D') {
+            midi.cc1 = Math.max(midi.cc1, 0.5); // Intensity Min 50%
+            midi.cc6 = Math.max(midi.cc6, 0.4); // Glow Min 40%
+        } else if (this.currentMode === '2D') {
+            // 2Dモードは補正なし（または必要ならここに追加）
+            // 既存コードに合わせて補正済みmidiを渡すように変更するため、ここでは何もしない
+            // ただしP5Managerは生のmidiを参照している箇所があるかもしれないので注意
+            // P5Manager.update(audio, midiRaw.ccs) としていたが、統一する
+        }
+
         const camZ = 5 + midi.cc3 * 15;
         this.camera.position.z = camZ;
 
@@ -290,13 +317,46 @@ export class SceneManager {
             if (this.particleSpawner.isActive) {
                 this.particleSpawner.update(audio, midi);
             } else {
-                this.layers.forEach(layer => layer.update(audio, midi, midi));
+                // Mode1改善：呼吸アニメーション + 超スロー回転
+                this.breathPhase += 0.01;
+                const breathScale = 1.0 + Math.sin(this.breathPhase) * 0.1 * audio.low; // 呼吸（低音で±10%）
+                const slowRotation = performance.now() * 0.0001; // 超スロー回転（30〜60秒/周）
+
+                this.layers.forEach((layer, i) => {
+                    layer.update(audio, midi, midi);
+
+                    // 呼吸スケール適用
+                    layer.group.scale.setScalar(breathScale);
+
+                    // 超スロー回転（Y軸）
+                    layer.group.rotation.y = slowRotation + i * 0.5;
+
+                    // Beat時の瞬間発光（emissive）
+                    if (audio.beat > 0.7) {
+                        layer.group.children.forEach(child => {
+                            if (child.material && child.material.emissive) {
+                                child.material.emissive.setHex(0xffffff);
+                                child.material.emissiveIntensity = audio.beat * midi.cc6; // CC6でGlow制御
+                            }
+                        });
+                    } else {
+                        layer.group.children.forEach(child => {
+                            if (child.material && child.material.emissive) {
+                                child.material.emissive.setHex(0x000000);
+                                child.material.emissiveIntensity = 0;
+                            }
+                        });
+                    }
+                });
             }
         } else if (this.currentMode === 'Shader') {
             // Nothing to update for scene objects as they are hidden
         }
 
-        this.effects.render(audio, midi);
+        // v1.3: VisualEffectManagerでシーンを描画し、その結果をCommonEffectsに渡す
+        // これにより Mode 1, 2, 4 すべてで共通パイプラインを通る
+        const sourceTexture = this.effects.render(audio, midi);
+        this.commonEffects.render(audio, midi, sourceTexture);
     }
 
     onResize() {
@@ -304,6 +364,7 @@ export class SceneManager {
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.effects.onResize();
+        this.commonEffects.onResize(); // v1.3
         // P5 handles resize internally via windowResized
     }
 }
