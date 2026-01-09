@@ -159,8 +159,12 @@ class App {
     document.getElementById('micBtn').addEventListener('click', () => {
       this.audio.enableMicrophone();
     });
-    document.getElementById('audioInput').addEventListener('change', (e) => {
+    document.getElementById('audioInput').addEventListener('change', async (e) => {
       if (e.target.files.length > 0) {
+        // iOS Fix: Must resume context inside the event handler
+        if (this.audio.context) {
+          await this.audio.context.resume();
+        }
         this.audio.playFile(e.target.files[0]);
       }
     });
