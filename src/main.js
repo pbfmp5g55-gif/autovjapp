@@ -19,11 +19,21 @@ class App {
     overlay.innerHTML = `
       <div class="content">
         <h1>Multi-Polygon VJ</h1>
+        
+        <div class="guide" style="text-align: left; margin: 20px auto; max-width: 400px; line-height: 1.6; color: #ccc;">
+            <h3>Quick Guide:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li>🎵 <strong>Audio:</strong> Use Microphone or Upload MP3/WAV.</li>
+                <li>🖼️ <strong>Visuals:</strong> Generative 3D or Upload Photo.</li>
+                <li>🎛️ <strong>Control:</strong> Turn on "Auto Pilot" or use MIDI (CC1-6).</li>
+            </ul>
+        </div>
+
         <button id="startBtn">CONFIRM & START VJ</button>
-        <p>Mic & MIDI Permission Required</p>
+        <p style="font-size: 0.8rem; opacity: 0.7;">Mic & MIDI Permission Required</p>
         
         <!-- AdSense Slot -->
-        <div style="margin-top: 20px; min-width: 300px; min-height: 250px; background: rgba(255,255,255,0.1);">
+        <div style="margin-top: 20px; min-width: 300px; min-height: 250px; background: rgba(255,255,255,0.05);">
             <ins class="adsbygoogle"
                  style="display:block"
                  data-ad-client="ca-pub-0000000000000000"
@@ -42,6 +52,8 @@ class App {
       this.start();
       overlay.style.display = 'none';
     });
+
+    // ... HUD setup ...
 
     // Simple HUD
     const hud = document.createElement('div');
@@ -221,21 +233,5 @@ class App {
       `CC1: ${m.cc1.toFixed(2)} | CC2: ${m.cc2.toFixed(2)} | CC3: ${m.cc3.toFixed(2)} | CC4: ${m.cc4.toFixed(2)} | CC5: ${m.cc5.toFixed(2)} (${modeStr}) | CC6: ${m.cc6.toFixed(2)}`;
   }
 }
-
-// VISIBLE ERROR LOGGER FOR DEBUGGING
-window.onerror = function (msg, url, lineNo, columnNo, error) {
-  const errorBox = document.createElement('div');
-  errorBox.style.position = 'fixed';
-  errorBox.style.top = '0';
-  errorBox.style.left = '0';
-  errorBox.style.width = '100%';
-  errorBox.style.background = 'red';
-  errorBox.style.color = 'white';
-  errorBox.style.zIndex = '9999';
-  errorBox.style.padding = '10px';
-  errorBox.innerText = `Error: ${msg} at line ${lineNo}`;
-  document.body.appendChild(errorBox);
-  return false;
-};
 
 new App();
