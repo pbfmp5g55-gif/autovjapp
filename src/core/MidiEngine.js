@@ -5,8 +5,8 @@ export class MidiEngine {
             cc2: 0,   // Hue Offset
             cc3: 0.5, // Camera Distance
             cc4: 0,   // Deform / FX
-            cc5: 0,   // Mode Switch (Noise/Kaleidoscope/OpArt)
-            cc6: 0.5  // Sub Parameter (Divisions, Frequency, etc)
+            cc5: 0,   // Unused/Extra (NO MODE SWITCH)
+            cc6: 0.5  // Sub Parameter
         };
         this.isInitialized = false;
         this.isAutoPilot = false;
@@ -72,14 +72,8 @@ export class MidiEngine {
         // CC4: FX - Random spikes or fast wave
         this.ccs.cc4 = Math.max(0, Math.sin(time * 1.5) * Math.sin(time * 0.5));
 
-        // CC5: Mode Switch - Switch every ~10 seconds
-        // 0.0-0.33, 0.33-0.66, 0.66-1.0
-        const modeTimer = time % 30;
-        if (modeTimer < 10) this.ccs.cc5 = 0.1;      // Normal/Noise
-        else if (modeTimer < 20) this.ccs.cc5 = 0.5; // Kaleidoscope
-        else this.ccs.cc5 = 0.8;                     // OpArt
-
-        // CC6: Sub Param - Constant movement
+        // CC5/6: Generic movement (NO MODE SWITCHING)
+        this.ccs.cc5 = Math.sin(time * 0.3) * 0.5 + 0.5;
         this.ccs.cc6 = Math.sin(time * 0.8) * 0.5 + 0.5;
     }
 

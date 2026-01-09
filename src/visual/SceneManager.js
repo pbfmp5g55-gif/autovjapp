@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { VJLayer } from './VJLayer';
 import { VisualEffectManager } from './VisualEffectManager';
 import { PhotoPolygonizer } from './PhotoPolygonizer';
+import { P5Manager } from './P5Manager';
 
 export class SceneManager {
     constructor() {
@@ -12,18 +13,23 @@ export class SceneManager {
         this.layers = [];
         this.objectCount = 5;
         this.currentPreset = 'L1';
-        this.isPhotoMode = false;
+
+        // Mode state
+        this.currentMode = '3D'; // '3D', 'Photo', '2D'
 
         this.photoPolygonizer = new PhotoPolygonizer(this.scene);
         this.effects = new VisualEffectManager(this.renderer, this.scene, this.camera);
+        this.p5Manager = new P5Manager('p5-container');
 
         this.init();
     }
 
     init() {
+        // THREE setup
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(this.renderer.domElement);
+        this.renderer.domElement.id = 'three-canvas';
 
         this.camera.position.z = 10;
 
@@ -34,56 +40,69 @@ export class SceneManager {
         pointLight.position.set(5, 5, 10);
         this.scene.add(pointLight);
 
+        // P5 setup
+        this.p5Manager.init();
+
         this.setupLayers();
 
         window.addEventListener('resize', () => this.onResize());
     }
 
-    setupLayers() {
-        if (this.isPhotoMode) {
-            this.layers.forEach(l => l.group.visible = false);
-            this.photoPolygonizer.group.visible = true;
-            return;
-        }
+    setMode(mode) {
+        if (this.currentMode === mode) return;
+        this.currentMode = mode;
+        console.log('Switched to Mode:', mode);
 
-        // Standard Mode
-        this.photoPolygonizer.group.visible = false;
+        this.updateVisibility();
+    }
 
-        // Re-create if needed or just toggle visibility
-        if (this.layers.length !== this.objectCount) {
-            this.layers.forEach(l => this.scene.remove(l.group));
-            this.layers = [];
-            const roles = ['Low', 'Mid', 'High', 'Beat', 'Ambient'];
-            for (let i = 0; i < this.objectCount; i++) {
-                const role = roles[i % roles.length];
-                const layer = new VJLayer(i, this.objectCount, role);
-                this.layers.push(layer);
-                this.scene.add(layer.group);
-            }
-            this.applyPreset(this.currentPreset);
+    updateVisibility() {
+        const threeCanvas = document.getElementById('three-canvas');
+
+        if (this.currentMode === '2D') {
+            // Show P5, Hide THREE
+            this.p5Manager.setVisible(true);
+            if (threeCanvas) threeCanvas.style.display = 'none';
         } else {
-            this.layers.forEach(l => l.group.visible = true);
+            // Hide P5, Show THREE
+            this.p5Manager.setVisible(false);
+            if (threeCanvas) threeCanvas.style.display = 'block';
+
+            // Inside THREE world, toggle Photo vs Standard
+            if (this.currentMode === 'Photo') {
+                this.layers.forEach(l => l.group.visible = false);
+                this.photoPolygonizer.group.visible = true;
+            } else { // 3D
+                // Show layers if they exist
+                if (this.layers.length === 0) this.setupLayers();
+                else this.layers.forEach(l => l.group.visible = true);
+
+                this.photoPolygonizer.group.visible = false;
+            }
         }
     }
 
-    setShowPhoto(enable) {
-        this.isPhotoMode = enable;
-        this.setupLayers();
+    setupLayers() {
+        // Re-create standard 3D layers
+        this.layers.forEach(l => this.scene.remove(l.group));
+        this.layers = [];
+
+        const roles = ['Low', 'Mid', 'High', 'Beat', 'Ambient'];
+        for (let i = 0; i < this.objectCount; i++) {
+            const role = roles[i % roles.length];
+            const layer = new VJLayer(i, this.objectCount, role);
+            this.layers.push(layer);
+            this.scene.add(layer.group);
+        }
+        this.applyPreset(this.currentPreset);
+
+        // Initial visibility check
+        this.updateVisibility();
     }
 
-    async loadPhoto(file) {
-        await this.photoPolygonizer.processImage(file);
-        this.setShowPhoto(true);
-    }
+    // --- Mode Specific Setters ---
 
-    setPhotoPolyCount(count) {
-        this.photoPolygonizer.setPolygonCount(count);
-    }
-
-    setPolyMode(mode) {
-        this.photoPolygonizer.setMode(mode);
-    }
-
+    // 3D Mode
     applyPreset(presetId) {
         this.currentPreset = presetId;
         this.layers.forEach((layer, i) => {
@@ -133,18 +152,46 @@ export class SceneManager {
         });
     }
 
-    onResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.effects.onResize();
+    setObjectCount(count) {
+        this.objectCount = count;
+        this.setupLayers();
     }
 
-    update(audio, midi) {
-        // CC3: Camera Distance
-        this.camera.position.z = 5 + midi.cc3 * 15;
+    // Photo Mode
+    async loadPhoto(file) {
+        await this.photoPolygonizer.processImage(file);
+        // Do not force switch mode, user must use UI, or maybe safe to switch?
+        // Spec says: Mode switch is manual only. 
+        // But for UX, if user uploads photo, maybe select Photo mode?
+        // Let's stick to strict manual mode switch as requested, or switch with visual feedback.
+        // For now, just load data.
+    }
 
-        if (this.isPhotoMode) {
+    setPhotoPolyCount(count) {
+        this.photoPolygonizer.setPolygonCount(count);
+    }
+
+    setPolyMode(mode) {
+        this.photoPolygonizer.setMode(mode);
+    }
+
+    // 2D Mode
+    setP5Preset(name) {
+        this.p5Manager.setPreset(name);
+    }
+
+    // Main Loop
+    update(audio, midi) {
+        const camZ = 5 + midi.cc3 * 15;
+        this.camera.position.z = camZ;
+
+        if (this.currentMode === '2D') {
+            this.p5Manager.update(audio, midi);
+            return; // Skip Three.js rendering if 2D mode
+        }
+
+        // Update active Three.js content
+        if (this.currentMode === 'Photo') {
             this.photoPolygonizer.update(audio, midi);
         } else {
             this.layers.forEach(layer => layer.update(audio, midi, midi));
@@ -153,8 +200,11 @@ export class SceneManager {
         this.effects.render(audio, midi);
     }
 
-    setObjectCount(count) {
-        this.objectCount = count;
-        this.setupLayers();
+    onResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.effects.onResize();
+        // P5 handles resize internally via windowResized
     }
 }
