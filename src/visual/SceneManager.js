@@ -3,35 +3,54 @@ import { VJLayer } from './VJLayer';
 import { VisualEffectManager } from './VisualEffectManager';
 import { PhotoPolygonizer } from './PhotoPolygonizer';
 import { P5Manager } from './P5Manager';
+import { AudioReactiveParticles } from './AudioReactiveParticles'; // Import
 
 export class SceneManager {
     constructor() {
         this.scene = new THREE.Scene();
+        // Fog
+        this.scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.z = 5;
+
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Add ID for switching
+        this.renderer.domElement.id = 'three-canvas';
+        this.renderer.domElement.style.position = 'absolute';
+        this.renderer.domElement.style.top = '0';
+        this.renderer.domElement.style.left = '0';
+        this.renderer.domElement.style.zIndex = '1';
+
+        document.body.appendChild(this.renderer.domElement);
 
         this.layers = [];
         this.objectCount = 5;
         this.currentPreset = 'L1';
+        this.currentMode = '3D'; // 3D, Photo, 2D, Shader
 
-        // Mode state
-        this.currentMode = '3D'; // '3D', 'Photo', '2D'
-
-        this.photoPolygonizer = new PhotoPolygonizer(this.scene);
+        // Managers
         this.effects = new VisualEffectManager(this.renderer, this.scene, this.camera);
         this.p5Manager = new P5Manager('p5-container');
+        this.photoPolygonizer = new PhotoPolygonizer(this.scene);
+        this.particleSpawner = new AudioReactiveParticles(this.scene); // Init Spawner
 
-        this.init();
+        this.setupLayers();
+
+        window.addEventListener('resize', () => this.onResize());
     }
 
     init() {
         // THREE setup
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.body.appendChild(this.renderer.domElement);
-        this.renderer.domElement.id = 'three-canvas';
+        // this.renderer.setSize(window.innerWidth, window.innerHeight); // Moved to constructor
+        // this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Moved to constructor
+        // document.body.appendChild(this.renderer.domElement); // Moved to constructor
+        // this.renderer.domElement.id = 'three-canvas'; // Moved to constructor
 
-        this.camera.position.z = 10;
+        // this.camera.position.z = 10; // Moved to constructor
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         this.scene.add(ambientLight);
@@ -69,15 +88,16 @@ export class SceneManager {
             if (this.currentMode === 'Photo') {
                 this.layers.forEach(l => l.group.visible = false);
                 this.photoPolygonizer.group.visible = true;
+                if (this.particleSpawner) this.particleSpawner.setVisible(false); // Hide Spawner
+
                 // Disable shader effects for clearer photo view
                 this.effects.setVMode('3D');
             } else if (this.currentMode === 'Shader') {
-                // Show layers, Enable Effects
-                if (this.layers.length === 0) this.setupLayers();
-                this.layers.forEach(l => l.group.visible = true);
+                if (this.layers.length > 0) this.layers.forEach(l => l.group.visible = false);
                 this.photoPolygonizer.group.visible = false;
+                if (this.particleSpawner) this.particleSpawner.setVisible(false); // Hide Spawner
 
-                // Set default shader params, preset will override
+                // Set default shader params
                 this.effects.setVMode('Noise');
             } else { // 3D Standard
                 if (this.layers.length === 0) this.setupLayers();
@@ -126,10 +146,14 @@ export class SceneManager {
         }
     }
 
+    setShaderColorMode(isMono) {
+        this.effects.setColorMode(isMono);
+    }
+
     // Auto Pilot Logic
     autoSwitchPreset() {
         if (this.currentMode === '3D') {
-            const presets = ['L1', 'L1_Spiral', 'L2', 'L2_Eccentric', 'L3', 'Matrix', 'Tunnel'];
+            const presets = ['L1', 'L1_Spiral', 'L2', 'L2_Eccentric', 'L3', 'Matrix', 'Tunnel', 'Spawn']; // Added Spawn
             const next = presets[Math.floor(Math.random() * presets.length)];
             this.applyPreset(next);
             console.log('Auto Prese (3D):', next);
@@ -159,6 +183,19 @@ export class SceneManager {
     // 3D Mode
     applyPreset(presetId) {
         this.currentPreset = presetId;
+
+        // Handle "Spawn" Preset specially
+        if (presetId === 'Spawn') {
+            this.particleSpawner.setVisible(true);
+            this.layers.forEach(l => l.group.visible = false);
+            return;
+        } else {
+            this.particleSpawner.setVisible(false);
+            if (this.currentMode === '3D') {
+                this.layers.forEach(l => l.group.visible = true);
+            }
+        }
+
         this.layers.forEach((layer, i) => {
             const t = i / this.layers.length;
             const angleOffset = (i / this.layers.length) * Math.PI * 2;
@@ -247,8 +284,15 @@ export class SceneManager {
         // Update active Three.js content
         if (this.currentMode === 'Photo') {
             this.photoPolygonizer.update(audio, midi);
-        } else {
-            this.layers.forEach(layer => layer.update(audio, midi, midi));
+        } else if (this.currentMode === '3D') {
+            // Check Spawn
+            if (this.particleSpawner.isActive) {
+                this.particleSpawner.update(audio, midi);
+            } else {
+                this.layers.forEach(layer => layer.update(audio, midi, midi));
+            }
+        } else if (this.currentMode === 'Shader') {
+            // Nothing to update for scene objects as they are hidden
         }
 
         this.effects.render(audio, midi);
