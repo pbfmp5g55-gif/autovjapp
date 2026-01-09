@@ -343,9 +343,10 @@ export class VisualEffectManager {
         this.effectMaterial.uniforms.audioHigh.value = audio.high;
         this.effectMaterial.uniforms.audioBeat.value = audio.beat;
 
-        // Pass MIDI CC5 and CC6
-        this.effectMaterial.uniforms.modeParam.value = midi.cc5;
-        this.effectMaterial.uniforms.subParam.value = midi.cc6;
+        // Pass MIDI CC5 and CC6 - Now purely extra params, NOT mode switchers if manually set
+        // We keep them for parameter tweaks within the mode
+        this.effectMaterial.uniforms.modeParam.value = 0; // Force 0 to let subMode control the main switch
+        this.effectMaterial.uniforms.subParam.value = midi.cc4; // Use CC4 as subParam for more control
 
         // Always render with effects for generative visuals
         // Render scene to target

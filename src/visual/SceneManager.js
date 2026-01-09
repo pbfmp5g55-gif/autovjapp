@@ -60,24 +60,33 @@ export class SceneManager {
         const threeCanvas = document.getElementById('three-canvas');
 
         if (this.currentMode === '2D') {
-            // Show P5, Hide THREE
             this.p5Manager.setVisible(true);
             if (threeCanvas) threeCanvas.style.display = 'none';
         } else {
-            // Hide P5, Show THREE
             this.p5Manager.setVisible(false);
             if (threeCanvas) threeCanvas.style.display = 'block';
 
-            // Inside THREE world, toggle Photo vs Standard
             if (this.currentMode === 'Photo') {
                 this.layers.forEach(l => l.group.visible = false);
                 this.photoPolygonizer.group.visible = true;
-            } else { // 3D
-                // Show layers if they exist
+                // Disable shader effects for clearer photo view
+                this.effects.setVMode('3D');
+            } else if (this.currentMode === 'Shader') {
+                // Show layers, Enable Effects
                 if (this.layers.length === 0) this.setupLayers();
-                else this.layers.forEach(l => l.group.visible = true);
-
+                this.layers.forEach(l => l.group.visible = true);
                 this.photoPolygonizer.group.visible = false;
+
+                // Set default shader params, preset will override
+                this.effects.setVMode('Noise');
+            } else { // 3D Standard
+                if (this.layers.length === 0) this.setupLayers();
+                this.layers.forEach(l => l.group.visible = true);
+                this.photoPolygonizer.group.visible = false;
+
+                // Normal view
+                this.effects.setVMode('3D');
+                this.effects.setSubMode('Normal');
             }
         }
     }
@@ -101,6 +110,51 @@ export class SceneManager {
     }
 
     // --- Mode Specific Setters ---
+
+    // Shader FX Mode
+    setShaderPreset(preset) {
+        // preset: 'Noise', 'Kaleido', 'OpArt'
+        if (preset === 'Noise') {
+            this.effects.setVMode('Noise');
+            this.effects.setSubMode('Normal');
+        } else if (preset === 'Kaleido') {
+            this.effects.setVMode('Composite'); // Mix
+            this.effects.setSubMode('Kaleidoscope');
+        } else if (preset === 'OpArt') {
+            this.effects.setVMode('Composite');
+            this.effects.setSubMode('OpArt');
+        }
+    }
+
+    // Auto Pilot Logic
+    autoSwitchPreset() {
+        if (this.currentMode === '3D') {
+            const presets = ['L1', 'L1_Spiral', 'L2', 'L2_Eccentric', 'L3', 'Matrix', 'Tunnel'];
+            const next = presets[Math.floor(Math.random() * presets.length)];
+            this.applyPreset(next);
+            console.log('Auto Prese (3D):', next);
+            return next; // Return for UI update
+        } else if (this.currentMode === 'Photo') {
+            // Toggle Style
+            const styles = ['Delaunay', 'Voronoi'];
+            const next = styles[Math.floor(Math.random() * styles.length)];
+            this.setPolyMode(next);
+            console.log('Auto Preset (Photo):', next);
+            return next;
+        } else if (this.currentMode === '2D') {
+            const presets = ['Noise Field', 'Glitch Scan', 'Kaleido Mirror', 'Op Art Moiré', 'Particle Constellation'];
+            const next = presets[Math.floor(Math.random() * presets.length)];
+            this.setP5Preset(next);
+            console.log('Auto Preset (2D):', next);
+            return next;
+        } else if (this.currentMode === 'Shader') {
+            const presets = ['Noise', 'Kaleido', 'OpArt'];
+            const next = presets[Math.floor(Math.random() * presets.length)];
+            this.setShaderPreset(next);
+            console.log('Auto Preset (Shader):', next);
+            return next;
+        }
+    }
 
     // 3D Mode
     applyPreset(presetId) {

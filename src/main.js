@@ -10,6 +10,10 @@ class App {
     this.midi = new MidiEngine();
     this.isStarted = false;
 
+    // Auto Pilot Timer
+    this.lastAutoSwitch = 0;
+    this.autoSwitchInterval = 10; // seconds
+
     this.setupUI();
     this.animate();
   }
@@ -27,6 +31,7 @@ class App {
                 <li><strong>Mode 1 (3D):</strong> Layered objects responding to sound.</li>
                 <li><strong>Mode 2 (Photo):</strong> Upload image -> 2.5D Polygons.</li>
                 <li><strong>Mode 3 (2D):</strong> Generative p5.js visuals.</li>
+                <li><strong>Mode 4 (Shader):</strong> Noise, Glitch, Kaleidoscope FX.</li>
             </ul>
         </div>
         <button id="startBtn">START VJ</button>
@@ -54,6 +59,7 @@ class App {
                 <option value="3D" selected>1: 3D Mode</option>
                 <option value="Photo">2: Photo Mode</option>
                 <option value="2D">3: 2D Mode</option>
+                <option value="Shader">4: Shader FX</option>
             </select>
         </div>
 
@@ -61,7 +67,7 @@ class App {
         <div id="subControls" class="control-group"></div>
 
         <div class="control-row" style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
-            <label><input type="checkbox" id="autoPilotCheck"> Auto Pilot (CC Random)</label>
+            <label><input type="checkbox" id="autoPilotCheck"> Auto Pilot (Preset & CC)</label>
         </div>
 
         <div class="control-row">
@@ -102,6 +108,8 @@ class App {
     // 2. Auto Pilot
     document.getElementById('autoPilotCheck').addEventListener('change', (e) => {
       this.midi.toggleAutoPilot(e.target.checked);
+      // Reset timer when enabling
+      if (e.target.checked) this.lastAutoSwitch = performance.now() * 0.001;
     });
 
     // 3. Audio
@@ -124,7 +132,7 @@ class App {
     container.innerHTML = ''; // Clear
 
     if (mode === '3D') {
-      // 3D Controls: Preset Select, Layer Count
+      // 3D Controls
       const html = `
             <div class="control-row">
                 <label>Preset:</label>
@@ -149,7 +157,6 @@ class App {
           `;
       container.innerHTML = html;
 
-      // Bind events
       document.getElementById('threePresetSelect').addEventListener('change', (e) => {
         this.scene.applyPreset(e.target.value);
       });
@@ -157,8 +164,11 @@ class App {
         this.scene.setObjectCount(parseInt(e.target.value));
       });
 
+      // Set current value if needed
+      document.getElementById('threePresetSelect').value = this.scene.currentPreset;
+
     } else if (mode === 'Photo') {
-      // Photo Controls: Upload, Style, Count
+      // Photo Controls
       const html = `
             <div class="control-row">
                 <label class="custom-file-upload" style="border-color:#ff00ff; color:#ff00ff; width:100%; text-align:center;">
@@ -169,19 +179,17 @@ class App {
             <div class="control-row">
                 <label>Style:</label>
                 <select id="photoStyleSelect">
-                    <option value="Delaunay">Delaunay (Triangles)</option>
-                    <option value="Voronoi">Superpixel (Stained Glass)</option>
+                    <option value="Delaunay">Delaunay</option>
+                    <option value="Voronoi">Superpixel</option>
                 </select>
             </div>
             <div class="control-row">
                 <label>Polygons: <span id="polyVal">25</span></label>
                 <input type="range" id="polyRange" min="10" max="100" value="25">
             </div>
-            <button id="regenBtn" style="width:100%; margin-top:5px;">Regenerate</button>
           `;
       container.innerHTML = html;
 
-      // Bind
       document.getElementById('photoInput').addEventListener('change', (e) => {
         if (e.target.files.length > 0) this.scene.loadPhoto(e.target.files[0]);
       });
@@ -194,18 +202,12 @@ class App {
       document.getElementById('polyRange').addEventListener('change', (e) => {
         this.scene.setPhotoPolyCount(parseInt(e.target.value));
       });
-      document.getElementById('regenBtn').addEventListener('click', () => {
-        // Trigger re-generation logic if needed, currently implied by setting count/mode
-        // or we can force update
-        const p = this.scene.photoPolygonizer;
-        if (p.ctx) { // Check if image loaded
-          const imgData = p.ctx.getImageData(0, 0, p.canvas.width, p.canvas.height);
-          p.createMeshes(p.generatePoints(imgData, p.polygonCountBase), imgData);
-        }
-      });
+
+      // Sync current
+      // this.scene.photoPolygonizer.mode ... hard to get direct ref easily without state sync, skip for now
 
     } else if (mode === '2D') {
-      // 2D Controls: Preset Select
+      // 2D Controls
       const html = `
             <div class="control-row">
                 <label>Preset:</label>
@@ -223,6 +225,43 @@ class App {
       document.getElementById('p5PresetSelect').addEventListener('change', (e) => {
         this.scene.setP5Preset(e.target.value);
       });
+
+      document.getElementById('p5PresetSelect').value = this.scene.p5Manager.currentPreset;
+
+    } else if (mode === 'Shader') {
+      // Shader Mode Controls
+      const html = `
+            <div class="control-row">
+                <label>Effect:</label>
+                <select id="shaderPresetSelect">
+                    <option value="Noise">Noise / Glitch</option>
+                    <option value="Kaleido">Kaleidoscope</option>
+                    <option value="OpArt">OpArt / Moiré</option>
+                </select>
+            </div>
+          `;
+      container.innerHTML = html;
+
+      document.getElementById('shaderPresetSelect').addEventListener('change', (e) => {
+        this.scene.setShaderPreset(e.target.value);
+      });
+    }
+  }
+
+  // Helper to update UI dropdowns when auto-switched
+  reflectPresetChange(mode, newValue) {
+    if (mode === '3D') {
+      const el = document.getElementById('threePresetSelect');
+      if (el) el.value = newValue;
+    } else if (mode === 'Photo') {
+      const el = document.getElementById('photoStyleSelect');
+      if (el) el.value = newValue;
+    } else if (mode === '2D') {
+      const el = document.getElementById('p5PresetSelect');
+      if (el) el.value = newValue;
+    } else if (mode === 'Shader') {
+      const el = document.getElementById('shaderPresetSelect');
+      if (el) el.value = newValue;
     }
   }
 
@@ -237,7 +276,18 @@ class App {
     requestAnimationFrame(() => this.animate());
 
     const time = performance.now() * 0.001;
-    this.midi.updateAutoPilot(time); // CC randomization only
+    this.midi.updateAutoPilot(time); // CC randomization
+
+    // Preset Auto-Switcher
+    if (this.midi.isAutoPilot && this.isStarted) {
+      if (time - this.lastAutoSwitch > this.autoSwitchInterval) {
+        const newPreset = this.scene.autoSwitchPreset();
+        if (newPreset) {
+          this.reflectPresetChange(this.scene.currentMode, newPreset);
+        }
+        this.lastAutoSwitch = time;
+      }
+    }
 
     const audioData = this.audio.update();
     this.scene.update(audioData, this.midi.ccs);
