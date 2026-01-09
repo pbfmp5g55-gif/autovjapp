@@ -36,7 +36,7 @@ class App {
         <div style="margin-top: 20px; min-width: 300px; min-height: 250px; background: rgba(255,255,255,0.05);">
             <ins class="adsbygoogle"
                  style="display:block"
-                 data-ad-client="ca-pub-0000000000000000"
+                 data-ad-client="ca-pub-6590253658108388"
                  data-ad-slot="0000000000"
                  data-ad-format="auto"
                  data-full-width-responsive="true"></ins>
