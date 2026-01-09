@@ -35,8 +35,9 @@ export class SceneManager {
         // Managers
         this.effects = new VisualEffectManager(this.renderer, this.scene, this.camera);
         this.p5Manager = new P5Manager('p5-container');
+        this.p5Manager.init(); // Initialize p5 instance
         this.photoPolygonizer = new PhotoPolygonizer(this.scene);
-        this.particleSpawner = new AudioReactiveParticles(this.scene); // Init Spawner
+        this.particleSpawner = new AudioReactiveParticles(this.scene);
 
         this.setupLayers();
 
