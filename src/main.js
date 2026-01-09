@@ -222,4 +222,20 @@ class App {
   }
 }
 
+// VISIBLE ERROR LOGGER FOR DEBUGGING
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+  const errorBox = document.createElement('div');
+  errorBox.style.position = 'fixed';
+  errorBox.style.top = '0';
+  errorBox.style.left = '0';
+  errorBox.style.width = '100%';
+  errorBox.style.background = 'red';
+  errorBox.style.color = 'white';
+  errorBox.style.zIndex = '9999';
+  errorBox.style.padding = '10px';
+  errorBox.innerText = `Error: ${msg} at line ${lineNo}`;
+  document.body.appendChild(errorBox);
+  return false;
+};
+
 new App();
