@@ -37,7 +37,7 @@ export class SceneManager {
         document.body.appendChild(this.renderer.domElement);
 
         this.layers = [];
-        this.objectCount = 5;
+        this.objectCount = 30; // Max count for Mode 1
         this.currentPreset = 'L1';
         this.currentMode = '3D'; // 3D, Photo, 2D, Shader
 
@@ -49,8 +49,11 @@ export class SceneManager {
         this.photoPolygonizer = new PhotoPolygonizer(this.scene);
         this.particleSpawner = new AudioReactiveParticles(this.scene);
 
-        // Mode1改善用：呼吸アニメーション
-        this.breathPhase = 0;
+        // Mode1 Logic State
+        this.lastSpawnTime = 0;
+        this.disappearTimer = 0;
+        this.targetCount = 1;
+        this.currentCount = 0;
 
         this.setupLayers();
 
@@ -214,31 +217,38 @@ export class SceneManager {
             const t = i / this.layers.length;
             const angleOffset = (i / this.layers.length) * Math.PI * 2;
 
-            if (presetId === 'L1') { // Pulse Core (Z-Stacked)
-                layer.group.position.set(0, 0, -i * 3);
-                layer.group.rotation.set(0, 0, 0);
+            if (presetId === 'L1') { // Random Cloud (formerly Pulse Core)
+                // Randomize position for "Natural" feel
+                const range = 15;
+                const zRange = 40;
+                layer.setPosition(
+                    (Math.random() - 0.5) * range,
+                    (Math.random() - 0.5) * range,
+                    -Math.random() * zRange
+                );
+                layer.group.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
             } else if (presetId === 'L1_Spiral') { // Pulse Core (Spiral)
                 const r = 2;
-                layer.group.position.set(Math.cos(angleOffset) * r, Math.sin(angleOffset) * r, -i * 4);
+                layer.setPosition(Math.cos(angleOffset) * r, Math.sin(angleOffset) * r, -i * 4);
                 layer.group.rotation.set(0, 0, angleOffset);
             } else if (presetId === 'L2') { // Orbit Layers
                 const radius = 5 + i * 2;
                 const angle = t * Math.PI * 2;
-                layer.group.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
+                layer.setPosition(Math.cos(angle) * radius, Math.sin(angle) * radius, 0);
             } else if (presetId === 'L2_Eccentric') { // Orbit Layers (Eccentric)
                 const radius = 6 + i * 2;
                 const angle = t * Math.PI * 2;
-                layer.group.position.set(Math.cos(angle) * radius, Math.sin(angle * 1.5) * radius * 0.5, Math.sin(angle) * 5);
+                layer.setPosition(Math.cos(angle) * radius, Math.sin(angle * 1.5) * radius * 0.5, Math.sin(angle) * 5);
             } else if (presetId === 'L3') { // Stacked Wave
-                layer.group.position.set((t - 0.5) * 20, Math.sin(t * Math.PI) * 5, -i * 2);
+                layer.setPosition((t - 0.5) * 20, Math.sin(t * Math.PI) * 5, -i * 2);
             } else if (presetId === 'L3_Double') { // Stacked Wave (Double)
                 const x = (t - 0.5) * 25;
                 const y = Math.cos(t * Math.PI * 2) * 8;
-                layer.group.position.set(x, y, -i * 3);
+                layer.setPosition(x, y, -i * 3);
             } else if (presetId === 'Matrix') { // Grid Layout
                 const cols = Math.ceil(Math.sqrt(this.objectCount));
                 const spacing = 4;
-                layer.group.position.set(
+                layer.setPosition(
                     ((i % cols) - cols / 2) * spacing,
                     (Math.floor(i / cols) - cols / 2) * spacing,
                     0
@@ -247,7 +257,7 @@ export class SceneManager {
             } else if (presetId === 'Tunnel') { // Tunnel Layout
                 const angle = i * 0.5;
                 const radius = 3;
-                layer.group.position.set(
+                layer.setPosition(
                     Math.cos(angle) * radius,
                     Math.sin(angle) * radius,
                     -i * 2 + 10
@@ -317,36 +327,88 @@ export class SceneManager {
             if (this.particleSpawner.isActive) {
                 this.particleSpawner.update(audio, midi);
             } else {
-                // Mode1改善：呼吸アニメーション + 超スロー回転
-                this.breathPhase += 0.01;
-                const breathScale = 1.0 + Math.sin(this.breathPhase) * 0.1 * audio.low; // 呼吸（低音で±10%）
-                const slowRotation = performance.now() * 0.0001; // 超スロー回転（30〜60秒/周）
+                // --- Mode 1 Logic: Audio Driven Polygon Swarm ---
 
-                this.layers.forEach((layer, i) => {
-                    layer.update(audio, midi, midi);
+                const now = performance.now();
+                const rms = audio.rms || 0;
 
-                    // 呼吸スケール適用
-                    layer.group.scale.setScalar(breathScale);
+                // 1. Calculate Target Count
+                // Quiet: 1-3, Normal: 4-7, High: 8-15, Peak: 16-30
+                // Simple mapping logic
+                let target = 0;
+                if (rms < 0.2) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0, 0.2, 1, 3));
+                else if (rms < 0.5) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.2, 0.5, 4, 7));
+                else if (rms < 0.8) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.5, 0.8, 8, 15));
+                else target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.8, 1.0, 16, 30));
 
-                    // 超スロー回転（Y軸）
-                    layer.group.rotation.y = slowRotation + i * 0.5;
+                // Clamp
+                target = Math.max(1, Math.min(30, target));
+                this.targetCount = target;
 
-                    // Beat時の瞬間発光（emissive）
-                    if (audio.beat > 0.7) {
-                        layer.group.children.forEach(child => {
-                            if (child.material && child.material.emissive) {
-                                child.material.emissive.setHex(0xffffff);
-                                child.material.emissiveIntensity = audio.beat * midi.cc6; // CC6でGlow制御
-                            }
-                        });
-                    } else {
-                        layer.group.children.forEach(child => {
-                            if (child.material && child.material.emissive) {
-                                child.material.emissive.setHex(0x000000);
-                                child.material.emissiveIntensity = 0;
-                            }
-                        });
+                // Count Active Layers
+                const activeLayers = this.layers.filter(l => l.isActive);
+                const activeCount = activeLayers.length;
+                this.currentCount = activeCount;
+
+                // 2. Spawn Logic
+                // Condition: Beat detected AND activeCount < targetCount AND Cooldown check
+                const isBeat = audio.beat > 0.6; // Threshold for beat
+                const spawnCooldownTime = 200; // ms 
+
+                // Force spawn if less than min (3) to ensure visibility
+                const forceSpawn = activeCount < 3;
+
+                if ((forceSpawn || (isBeat && activeCount < target)) && (now - this.lastSpawnTime > spawnCooldownTime)) {
+                    // Find RANDOM inactive layer
+                    const inactiveLayers = this.layers.filter(l => !l.isActive);
+                    if (inactiveLayers.length > 0) {
+                        const inactiveLayer = inactiveLayers[Math.floor(Math.random() * inactiveLayers.length)];
+                        inactiveLayer.spawn();
+                        this.lastSpawnTime = now;
                     }
+                }
+
+                // 3. Disappear Logic
+                // Condition: activeCount > targetCount persisted
+                if (activeCount > target) {
+                    this.disappearTimer += 16; // approx ms per frame
+                    if (this.disappearTimer > 500) { // Delayed reaction (0.5s)
+                        // Find one active layer to remove. 
+                        // To look natural, maybe remove random or oldest? 
+                        // Let's remove the one with highest index currently active (often 'outer' ones in some layouts) or just random.
+                        // Random prevents pattern artifacts.
+                        const activeCandidates = this.layers.filter(l => l.isActive && !l.isDisappearing);
+                        if (activeCandidates.length > 0) {
+                            const toRemove = activeCandidates[Math.floor(Math.random() * activeCandidates.length)];
+
+                            // 4. Determine Disappear Type
+                            // Beat/Low -> Suck, Mid -> Shrink, Low RMS -> Fade
+                            let type = 'fade'; // Default
+
+                            // Priority: Beat > Low > Mid > RMS
+                            if (audio.beat > 0.7 || audio.low > 0.6) {
+                                type = 'suck';
+                            } else if (audio.mid > 0.6) {
+                                type = 'shrink';
+                            } else {
+                                type = 'fade';
+                            }
+
+                            toRemove.disappear(type);
+                            this.disappearTimer = 0; // Reset timer after action
+                        }
+                    }
+                } else {
+                    this.disappearTimer = 0;
+                }
+
+                // 5. Update All Layers
+                // Also apply global motion (slow rotation of the whole group/camera perception)
+                // SceneManager usually handles camera z, but here we can rotate individual layers in VJLayer.js or here.
+                // VJLayer.js handles its own rotation.
+
+                this.layers.forEach(layer => {
+                    layer.update(audio, midi, midi);
                 });
             }
         } else if (this.currentMode === 'Shader') {

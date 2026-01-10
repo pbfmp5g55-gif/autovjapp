@@ -399,21 +399,14 @@ class App {
                     <option value="L3">Stacked Wave</option>
                     <option value="Matrix">Matrix Grid</option>
                     <option value="Tunnel">Tunnel Vision</option>
-                    <option value="Spawn">Spawn: Dynamic Audio</option>
                 </select>
             </div>
-            <div class="control-row">
-                <label>Layers:</label>
-                <select id="layerCountSelect">
-                    <option value="3">3</option>
-                    <option value="5" selected>5</option>
-                    <option value="10">10</option>
-                </select>
+            <div class="control-row" style="margin-top:5px; font-size:0.8rem; color:#aaa;">
+                <span>Polygons: Audio Reactive (Max 30)</span>
             </div>
           `;
       container.innerHTML = html;
       document.getElementById('threePresetSelect').addEventListener('change', (e) => this.scene.applyPreset(e.target.value));
-      document.getElementById('layerCountSelect').addEventListener('change', (e) => this.scene.setObjectCount(parseInt(e.target.value)));
       document.getElementById('threePresetSelect').value = this.scene.currentPreset;
 
     } else if (mode === 'Photo') {
