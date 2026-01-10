@@ -54,6 +54,64 @@ export class AudioEngine {
     // Note: Mic source is NOT connected to destination to avoid feedback loop
   }
 
+  async enableSystemAudio() {
+    if (this.currentSource) {
+      this.currentSource.disconnect();
+    }
+    // Stop file playback if any
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement = null;
+    }
+
+    try {
+      // Use getDisplayMedia to capture system audio. Video is required but we'll ignore it.
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: {
+          echoCancellation: false,
+          autoGainControl: false,
+          noiseSuppression: false
+        }
+      });
+
+      // Stop video track immediately as we only need audio
+      stream.getVideoTracks().forEach(track => track.stop());
+
+      if (stream.getAudioTracks().length === 0) {
+        console.warn('No audio track found in system stream.');
+        // User might have unchecked "Share audio"
+        alert('音声トラックが見つかりませんでした。画面共有時に「システムオーディオを共有」にチェックを入れているか確認してください。');
+        return;
+      }
+
+      this.currentSource = this.context.createMediaStreamSource(stream);
+
+      // Create analyser if not exists
+      if (!this.analyser) {
+        this.analyser = this.context.createAnalyser();
+        this.analyser.fftSize = 1024;
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+      }
+
+      this.currentSource.connect(this.analyser);
+      // System audio usually doesn't need to be connected to destination as it's already playing on the system.
+      // However, if we are capturing a specific tab, muting might occur on that tab, so we might need to monitor it.
+      // For now, let's assume standard loopback behavior which doesn't need output.
+
+      console.log('System Audio Enabled');
+
+      // Handle stream ended (user stops sharing)
+      stream.getAudioTracks()[0].onended = () => {
+        console.log('System Audio Stream Ended');
+        // Ideally revert to something else or just leave it silent
+      };
+
+    } catch (err) {
+      console.error('Error enabling system audio:', err);
+    }
+  }
+
   playFile(file) {
     if (this.context.state === 'suspended') {
       this.context.resume();

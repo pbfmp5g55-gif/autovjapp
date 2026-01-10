@@ -15,6 +15,7 @@ class App {
     this.autoSwitchInterval = 10; // seconds
 
     this.setupUI();
+    this.currentInputType = 'MIC'; // Default
     this.animate();
   }
 
@@ -51,12 +52,15 @@ class App {
       overlay.style.display = 'none';
       this.scene.setMode('3D');
       this.updateSubUI('3D');
+      this.updateInputState('MIC');
     });
 
     // Main HUD
     const hud = document.createElement('div');
     hud.id = 'hud';
     hud.innerHTML = `
+        <div id="loadingOverlay"><div id="loadingBar"></div></div>
+
         <div class="control-row">
             <label>Mode:</label>
             <select id="mainModeSelect">
@@ -71,10 +75,10 @@ class App {
         <div id="subControls" class="control-group"></div>
 
         <!-- MIDI Settings (v1.3) -->
-        <div style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
+        <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.2); padding-top:10px; width:100%;">
             <div class="control-row">
                 <label style="font-weight:bold; color:#0ff;">MIDI Settings</label>
-                <button id="toggleMidiSettings" style="font-size:0.7rem; padding:2px 8px;">Show/Hide</button>
+                <button id="toggleMidiSettings" style="font-size:0.7rem; padding:4px 8px;">Show/Hide</button>
             </div>
             <div id="midiSettingsPanel" style="display:none; margin-top:10px;">
                 <div class="control-row">
@@ -106,7 +110,7 @@ class App {
                     </select>
                 </div>
                 <div style="font-size:0.7rem; color:#888; margin:5px 0;">
-                    ℹ️ Bluetooth MIDI: OS側でペアリング後、ページを再読み込みしてください
+                    ℹ️ Bluetooth MIDI: Pair via OS then reload
                 </div>
                 <div class="control-row">
                     <button id="showCCMapping" style="width:100%; font-size:0.8rem;">CC Mapping Settings</button>
@@ -114,22 +118,27 @@ class App {
             </div>
         </div>
 
-        <div class="control-row" style="margin-top:15px; border-top:1px solid #444; padding-top:10px;">
+        <div class="control-row" style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.2); padding-top:10px;">
             <label><input type="checkbox" id="autoPilotCheck"> Auto Pilot</label>
         </div>
 
-        <div class="control-row">
-            <button id="micBtn">Mic input</button>
-        </div>
-        
-        <div class="control-row">
-            <label class="custom-file-upload">
-                File Audio
+        <!-- Input Selector -->
+         <div style="width:100%; text-align:left; font-size:0.8rem; color:#aaa; margin-top:10px;">Audio Input:</div>
+        <div class="input-selector-group">
+            <div id="inputMic" class="input-btn active mic">
+                <span>🎤 MIC</span>
+                <div class="mic-meter-bar" id="micMeterBar"></div>
+            </div>
+            <div id="inputSystem" class="input-btn">
+                <span>🖥️ PC</span>
+            </div>
+            <div id="inputFile" class="input-btn">
+                <span>📁 FILE</span>
                 <input type="file" id="audioInput" accept="audio/*, .mp3, .wav, .m4a" style="display:none;">
-            </label>
+            </div>
         </div>
 
-        <div id="midiMonitor" style="margin-top:10px; font-size:10px; color:#888;">Waiting for MIDI...</div>
+        <div id="midiMonitor" style="margin-top:5px; font-size:10px; color:#888;">Waiting for MIDI...</div>
     `;
     document.body.appendChild(hud);
 
@@ -152,13 +161,35 @@ class App {
       if (e.target.checked) this.lastAutoSwitch = performance.now() * 0.001;
     });
 
-    document.getElementById('micBtn').addEventListener('click', () => {
+    // Input Selector Logic
+    const micBtn = document.getElementById('inputMic');
+    const systemBtn = document.getElementById('inputSystem');
+    const fileBtn = document.getElementById('inputFile');
+    const audioInput = document.getElementById('audioInput');
+
+    micBtn.addEventListener('click', () => {
+      this.updateInputState('MIC');
       this.audio.enableMicrophone();
     });
-    document.getElementById('audioInput').addEventListener('change', async (e) => {
+
+    systemBtn.addEventListener('click', () => {
+      this.updateInputState('SYSTEM');
+      this.audio.enableSystemAudio();
+    });
+
+    fileBtn.addEventListener('click', () => {
+      // Trigger file input
+      audioInput.click();
+    });
+
+    audioInput.addEventListener('change', async (e) => {
       if (e.target.files.length > 0) {
-        if (this.audio.context) await this.audio.context.resume();
-        this.audio.playFile(e.target.files[0]);
+        this.updateInputState('FILE');
+        // Show Loading
+        this.simulateLoading(1500, async () => {
+          if (this.audio.context) await this.audio.context.resume();
+          this.audio.playFile(e.target.files[0]);
+        });
       }
     });
 
@@ -180,7 +211,7 @@ class App {
       this.showCCMappingModal();
     });
 
-    // MIDI Input List更新コールバック
+    // MIDI Input List update callback
     this.midi.onInputListChanged = (inputs) => {
       const select = document.getElementById('midiInputSelect');
       select.innerHTML = '<option value="all">All Inputs</option>';
@@ -193,10 +224,55 @@ class App {
       select.value = this.midi.selectedInputId;
     };
 
-    // MIDI設定を復元
+    // Restore MIDI settings
     document.getElementById('midiChannelSelect').value = this.midi.selectedChannel;
 
     this.updateSubUI('3D');
+  }
+
+  updateInputState(type) {
+    this.currentInputType = type;
+    const micBtn = document.getElementById('inputMic');
+    const systemBtn = document.getElementById('inputSystem');
+    const fileBtn = document.getElementById('inputFile');
+
+    // Remove all active classes
+    micBtn.classList.remove('active', 'mic');
+    systemBtn.classList.remove('active', 'system');
+    fileBtn.classList.remove('active', 'file');
+
+    if (type === 'MIC') {
+      micBtn.classList.add('active', 'mic');
+    } else if (type === 'SYSTEM') {
+      systemBtn.classList.add('active', 'system');
+    } else {
+      fileBtn.classList.add('active', 'file');
+    }
+  }
+
+  simulateLoading(duration, callback) {
+    const overlay = document.getElementById('loadingOverlay');
+    const bar = document.getElementById('loadingBar');
+    if (overlay) overlay.style.display = 'block';
+
+    let start = performance.now();
+
+    const loop = () => {
+      const now = performance.now();
+      const p = Math.min((now - start) / duration, 1.0);
+      if (bar) bar.style.width = (p * 100) + '%';
+
+      if (p < 1.0) {
+        requestAnimationFrame(loop);
+      } else {
+        setTimeout(() => {
+          if (overlay) overlay.style.display = 'none';
+          if (bar) bar.style.width = '0%';
+          if (callback) callback();
+        }, 200);
+      }
+    };
+    loop();
   }
 
   showCCMappingModal() {
@@ -362,7 +438,13 @@ class App {
             <button id="regenBtn" style="width:100%; margin-top:5px; font-size:0.8rem; padding:5px;">Regenerate</button>
           `;
       container.innerHTML = html;
-      document.getElementById('photoInput').addEventListener('change', (e) => { if (e.target.files.length) this.scene.loadPhoto(e.target.files[0]); });
+      document.getElementById('photoInput').addEventListener('change', (e) => {
+        if (e.target.files.length) {
+          this.simulateLoading(2000, async () => {
+            this.scene.loadPhoto(e.target.files[0]);
+          });
+        }
+      });
       document.getElementById('photoStyleSelect').addEventListener('change', (e) => this.scene.setPolyMode(e.target.value));
       document.getElementById('polyRange').addEventListener('input', (e) => document.getElementById('polyVal').innerText = e.target.value);
       document.getElementById('polyRange').addEventListener('change', (e) => this.scene.setPhotoPolyCount(parseInt(e.target.value)));
@@ -449,6 +531,17 @@ class App {
 
     const audioData = this.audio.update();
     this.scene.update(audioData, this.midi.ccs);
+
+    // Live Meter Update
+    if (this.currentInputType === 'MIC') {
+      const meter = document.getElementById('micMeterBar');
+      if (meter) {
+        // RMS is roughly 0.0 to 1.0 (sometimes higher depending on engine normalisation)
+        // Visual scale needed
+        const vol = Math.min(audioData.rms * 300, 100);
+        meter.style.width = vol + '%';
+      }
+    }
 
     const m = this.midi.ccs;
     document.getElementById('midiMonitor').innerText =

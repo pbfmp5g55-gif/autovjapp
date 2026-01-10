@@ -3,16 +3,37 @@
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
-  color: #ffffff;
-  background-color: #000000;
+
+  /* Color Palette */
+  --bg-color: #000000;
+  --text-main: #eeeeee;
+  --text-dim: #aaaaaa;
+
+  --color-accent: #00ffff;
+  --color-accent-dim: rgba(0, 255, 255, 0.3);
+  --color-active: #00ffff;
+  --color-active-bg: rgba(0, 255, 255, 0.2);
+
+  --color-mic: #00ff00;
+  /* Green for Mic */
+  --color-file: #ff00ff;
+  /* Magenta for File */
+  --color-system: #00ffff;
+  /* Cyan for System */
+
+  --glass-bg: rgba(20, 20, 20, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-border-hover: rgba(255, 255, 255, 0.6);
 }
 
 body {
   margin: 0;
   overflow: hidden;
   background: radial-gradient(circle at center, #111 0%, #000 100%);
+  color: var(--text-main);
 }
 
+/* OVERLAY */
 #overlay {
   position: fixed;
   top: 0;
@@ -23,16 +44,17 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100;
+  z-index: 1000;
   backdrop-filter: blur(10px);
 }
 
 .content {
   text-align: center;
   padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
 h1 {
@@ -44,45 +66,38 @@ h1 {
   letter-spacing: 2px;
 }
 
+/* BUTTONS - VISIBILITY FIRST */
 button {
-  padding: 15px 40px;
-  font-size: 1.2rem;
-  background: transparent;
-  color: white;
-  border: 2px solid #00ffff;
-  border-radius: 30px;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+  /* Visible border by default */
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  font-weight: 600;
+  opacity: 1.0 !important;
+  /* Force visible */
 }
 
 button:hover {
-  background: #00ffff;
-  color: black;
-  box-shadow: 0 0 20px #00ffff;
-}
-
-.custom-file-upload {
-  padding: 15px 40px;
-  font-size: 1.2rem;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--color-accent);
   color: white;
-  border: 2px solid #00ffff;
-  border-radius: 30px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  display: inline-block;
+  box-shadow: 0 0 15px var(--color-accent-dim);
 }
 
-.custom-file-upload:hover {
-  background: #00ffff;
-  color: black;
-  box-shadow: 0 0 20px #00ffff;
+button:active {
+  background: var(--color-active-bg);
+  border-color: var(--color-active);
+  transform: translateY(1px);
 }
 
+/* HUD CONTAINER */
 #hud {
   position: fixed;
   bottom: 20px;
@@ -91,14 +106,16 @@ button:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   z-index: 10;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 15px 30px;
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+  background: rgba(0, 0, 0, 0.85);
+  /* Slightly darker for better text contrast */
+  padding: 20px 30px;
+  border-radius: 16px;
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+  min-width: 300px;
 }
 
 #hud.hidden {
@@ -107,71 +124,198 @@ button:hover {
   pointer-events: none;
 }
 
-.controls {
+/* CONTROLS */
+.control-row {
   display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  justify-content: space-between;
 }
 
-select,
-#wireframeBtn,
-#toggleHudBtn,
-#micBtn,
-.custom-file-upload {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+label {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+select {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--glass-border);
   color: white;
-  padding: 8px 15px;
-  border-radius: 20px;
+  padding: 8px 12px;
+  border-radius: 8px;
   cursor: pointer;
   outline: none;
   font-size: 0.9rem;
+  flex: 1;
 }
 
-select:hover,
-#wireframeBtn:hover,
-#toggleHudBtn:hover,
-#micBtn:hover,
-.custom-file-upload:hover {
-  background: rgba(255, 255, 255, 0.2);
+select:hover {
+  border-color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.25);
 }
 
+/* INPUT SELECTOR UI */
+.input-selector-group {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin: 10px 0;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+}
+
+.input-btn {
+  flex: 1;
+  padding: 10px;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #888;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+  text-align: center;
+  cursor: pointer;
+}
+
+.input-btn span {
+  position: relative;
+  z-index: 2;
+}
+
+/* Active States for Inputs */
+.input-btn.active.mic {
+  background: rgba(0, 255, 0, 0.15);
+  border-color: #00ff00;
+  color: #e0ffe0;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+  font-weight: bold;
+}
+
+.input-btn.active.file {
+  background: rgba(255, 0, 255, 0.15);
+  border-color: #ff00ff;
+  color: #ffe0ff;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+  font-weight: bold;
+}
+
+.input-btn.active.system {
+  background: rgba(0, 255, 255, 0.15);
+  border-color: #00ffff;
+  color: #e0ffff;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+  font-weight: bold;
+}
+
+/* Small Audio Meter in Mic Button */
+.mic-meter-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #00ff00;
+  width: 0%;
+  transition: width 0.05s linear;
+  z-index: 1;
+}
+
+/* Loading Bar */
+#loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  overflow: hidden;
+  display: none;
+  z-index: 99;
+}
+
+#loadingBar {
+  width: 0%;
+  height: 100%;
+  background: #ffff00;
+  /* Loading Yellow */
+  box-shadow: 0 0 10px #ffff00;
+  transition: width 0.1s linear;
+}
+
+/* TOGGLE UI BUTTON */
 #toggleHudBtn {
   position: fixed;
   bottom: 20px;
   right: 20px;
   z-index: 11;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(40, 40, 40, 0.8);
+  border: 1px solid var(--glass-border);
+  color: white;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
 }
 
+#toggleHudBtn:hover {
+  background: #444;
+  border-color: white;
+  transform: scale(1.1);
+}
+
+/* MIDI MONITOR */
 #midiMonitor {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 0.8rem;
-  color: #00ff00;
-  text-shadow: 0 0 5px #00ff00;
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 5px;
+  width: 100%;
+  text-align: center;
 }
 
-/* HIGH CONTRAST START BUTTON */
+/* START BUTTON */
 #startBtn {
-  background-color: #ff00ff !important;
-  color: white !important;
-  border: 2px solid white !important;
-  font-weight: 800;
-  box-shadow: 0 0 15px #ff00ff;
-  margin-top: 20px;
+  background-color: var(--color-active-bg);
+  border: 1px solid var(--color-active);
+  box-shadow: 0 0 20px var(--color-accent-dim);
+  font-weight: bold;
 }
 
 #startBtn:hover {
-  background-color: white !important;
-  color: #ff00ff !important;
-  box-shadow: 0 0 25px white;
-  transform: scale(1.05);
+  background-color: var(--color-active);
+  color: black;
+}
+
+/* Custom File Upload Input Helper */
+/* Since we are using custom buttons for input selection, 
+   we might not need the .custom-file-upload class as it was.
+   But we still need it for the sub-controls in Photo mode?
+   Let's keep it consistent.
+*/
+
+.custom-file-upload {
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-block;
+  text-align: center;
+}
+
+.custom-file-upload:hover {
+  border-color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.25);
 }
