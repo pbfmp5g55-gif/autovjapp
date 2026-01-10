@@ -184,10 +184,12 @@ class App {
 
     audioInput.addEventListener('change', async (e) => {
       if (e.target.files.length > 0) {
+        // IMPORTANT: Resume context immediately on user action
+        if (this.audio.context) await this.audio.context.resume();
+
         this.updateInputState('FILE');
         // Show Loading
         this.simulateLoading(1500, async () => {
-          if (this.audio.context) await this.audio.context.resume();
           this.audio.playFile(e.target.files[0]);
         });
       }

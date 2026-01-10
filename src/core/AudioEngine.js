@@ -30,17 +30,30 @@ export class AudioEngine {
     }
   }
 
+  // Helper to fully stop MediaStream tracks (release Mic / System Audio)
+  _stopCurrentStream() {
+    if (this.currentStream) {
+      this.currentStream.getTracks().forEach(track => track.stop());
+      this.currentStream = null;
+    }
+  }
+
   async enableMicrophone() {
     if (this.currentSource) {
       this.currentSource.disconnect();
     }
+    this._stopCurrentStream();
+
     // Stop file playback if any
     if (this.audioElement) {
       this.audioElement.pause();
+      this.audioElement.removeAttribute('src');
+      if (this.audioElement.parentNode) this.audioElement.parentNode.removeChild(this.audioElement);
       this.audioElement = null;
     }
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.currentStream = stream; // Keep reference
     this.currentSource = this.context.createMediaStreamSource(stream);
 
     // Create analyser if not exists
@@ -58,6 +71,7 @@ export class AudioEngine {
     if (this.currentSource) {
       this.currentSource.disconnect();
     }
+    this._stopCurrentStream();
     // Stop file playback if any
     if (this.audioElement) {
       this.audioElement.pause();
@@ -74,6 +88,8 @@ export class AudioEngine {
           noiseSuppression: false
         }
       });
+
+      this.currentStream = stream; // Keep reference
 
       // Stop video track immediately as we only need audio
       stream.getVideoTracks().forEach(track => track.stop());
@@ -117,6 +133,9 @@ export class AudioEngine {
       this.context.resume();
     }
 
+    // Stop any active stream (Mic, System)
+    this._stopCurrentStream();
+
     const url = URL.createObjectURL(file);
 
     if (this.audioElement) {
@@ -124,7 +143,12 @@ export class AudioEngine {
     }
 
     this.audioElement = new Audio(url);
+    this.audioElement.crossOrigin = "anonymous";
     this.audioElement.loop = true;
+    this.audioElement.playsInline = true; // iOS fix
+    // Append to DOM to ensure OS treats it as active media (fixes screen recording audio capture on some devices)
+    this.audioElement.style.display = 'none';
+    document.body.appendChild(this.audioElement);
     this.audioElement.play();
 
     if (this.currentSource) {
