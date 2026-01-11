@@ -158,6 +158,21 @@ export class MidiEngine {
                 this.ccs[paramName] = val;
                 console.log(`MIDI CC${ccNum} (${paramName}): ${val.toFixed(2)}`);
             }
+        } else if (type === 0x90) { // Note On
+            const note = data1;
+            const velocity = data2;
+            if (velocity > 0) {
+                if (this.onNoteOn) {
+                    this.onNoteOn(note, velocity);
+                }
+                console.log(`MIDI Note On: ${note}, Vel: ${velocity}`);
+            }
+        } else if (type === 0x80) { // Note Off
+            // Optional: Handle Note Off
+            const note = data1;
+            if (this.onNoteOff) {
+                this.onNoteOff(note);
+            }
         }
     }
 

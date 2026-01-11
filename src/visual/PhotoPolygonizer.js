@@ -133,11 +133,23 @@ export class PhotoPolygonizer {
             shape.lineTo(p2[0] + this.centerOffset.x, p2[1] + this.centerOffset.y);
             shape.lineTo(p0[0] + this.centerOffset.x, p0[1] + this.centerOffset.y);
 
-            const geometry = new THREE.ShapeGeometry(shape);
-            const material = new THREE.MeshBasicMaterial({
+            // Create 3D Geometry (Extrude for thickness)
+            const depth = 20 + Math.random() * 30; // Substantial thickness
+            const extrudeSettings = {
+                depth: depth,
+                bevelEnabled: false // Flat sides look cleaner for glitch art
+            };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+            // Use Standard Material for lighting/shading
+            const material = new THREE.MeshStandardMaterial({
                 color: color,
-                side: THREE.DoubleSide,
-                // wireframe: true // Debug
+                roughness: 0.4,
+                metalness: 0.1,
+                emissive: color,
+                emissiveIntensity: 0.25,
+                flatShading: true,
+                side: THREE.DoubleSide
             });
 
             const mesh = new THREE.Mesh(geometry, material);
@@ -268,8 +280,23 @@ export class PhotoPolygonizer {
                 const centerP = points[pIndex];
                 const color = this.sampleColor(imageData, centerP[0], centerP[1]);
 
-                const geometry = new THREE.ShapeGeometry(shape);
-                const material = new THREE.MeshBasicMaterial({ color: color });
+                // Create 3D Geometry
+                const depth = 20 + Math.random() * 30;
+                const extrudeSettings = {
+                    depth: depth,
+                    bevelEnabled: false
+                };
+                const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+                // Standard Material
+                const material = new THREE.MeshStandardMaterial({
+                    color: color,
+                    roughness: 0.4,
+                    metalness: 0.1,
+                    emissive: color,
+                    emissiveIntensity: 0.25,
+                    flatShading: true
+                });
                 const mesh = new THREE.Mesh(geometry, material);
 
                 mesh.userData = {

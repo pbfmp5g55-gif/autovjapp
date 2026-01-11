@@ -10,6 +10,10 @@ class App {
     this.midi = new MidiEngine();
     this.isStarted = false;
 
+    // Video Mode State
+    this.selectedVideoId = null;
+    this.isAssigningVideoNote = false;
+
     // Auto Pilot
     this.lastAutoSwitch = 0;
     this.autoSwitchInterval = 10; // seconds
@@ -55,6 +59,30 @@ class App {
       this.updateInputState('MIC');
     });
 
+
+
+    // MIDI Note Event Connection
+    this.midi.onNoteOn = (note, vel) => {
+      if (this.isAssigningVideoNote && this.selectedVideoId) {
+        // Assign Note
+        this.scene.videoManager.assignNote(this.selectedVideoId, note);
+        this.isAssigningVideoNote = false;
+        this.renderVideoList(); // Update UI
+        const btn = document.getElementById('assignLearnBtn');
+        if (btn) {
+          btn.textContent = 'Learn Note';
+          btn.style.background = '';
+          btn.style.color = '';
+        }
+      } else {
+        // Pass to Scene
+        this.scene.onNoteOn(note, vel);
+
+        // UI Highlight?
+        // Maybe handle in render loop or CSS class toggle if we had a keyboard UI
+      }
+    };
+
     // Main HUD
     const hud = document.createElement('div');
     hud.id = 'hud';
@@ -67,7 +95,10 @@ class App {
                 <option value="3D" selected>1: 3D Mode</option>
                 <option value="Photo">2: Photo Mode</option>
                 <option value="2D">3: 2D Mode</option>
+                <option value="Photo">2: Photo Mode</option>
+                <option value="2D">3: 2D Mode</option>
                 <option value="Shader">4: Shader FX</option>
+                <option value="Video">5: Video Mode</option>
             </select>
         </div>
 
@@ -485,7 +516,119 @@ class App {
       document.getElementById('shaderColorSelect').addEventListener('change', (e) => {
         this.scene.setShaderColorMode(e.target.value === 'Mono');
       });
+
+    } else if (mode === 'Video') {
+      const html = `
+            <div class="control-row">
+                <label>Videos</label>
+                <label class="custom-file-upload" style="border:1px solid #0ff; color:#0ff; padding:2px 8px; font-size:0.8rem; cursor:pointer;">
+                    + Add
+                    <input type="file" id="videoUpload" multiple accept="video/mp4,video/webm" style="display:none;">
+                </label>
+            </div>
+            
+            <div id="videoList" class="video-list"></div>
+            
+            <div class="control-row" style="margin-top:10px;">
+                <button id="assignLearnBtn" style="width:100%; font-size:0.8rem; padding:5px;">Assign to MIDI Note (Learn)</button>
+            </div>
+
+            <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                <div class="control-row">
+                    <label>Auto Pilot:</label>
+                    <label><input type="checkbox" id="videoAutoPilotCheck"> Enable</label>
+                </div>
+                <div class="control-row">
+                    <label style="font-size:0.8rem;">Interval: <span id="vIntervalVal">2000</span>ms</label>
+                    <input type="range" id="videoIntervalRange" min="500" max="8000" step="100" value="2000">
+                </div>
+            </div>
+        `;
+      container.innerHTML = html;
+
+      this.renderVideoList();
+
+      // Events
+      document.getElementById('videoUpload').addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          this.scene.videoManager.addVideos(e.target.files, (id, status) => {
+            this.renderVideoList();
+          });
+        }
+      });
+
+      document.getElementById('assignLearnBtn').addEventListener('click', (e) => {
+        if (!this.selectedVideoId) {
+          alert('Select a video first!');
+          return;
+        }
+        this.isAssigningVideoNote = true;
+        e.target.textContent = 'Press MIDI Note...';
+        e.target.style.background = '#ff0';
+        e.target.style.color = '#000';
+      });
+
+      // Auto Pilot
+      const vm = this.scene.videoManager;
+      const apCheck = document.getElementById('videoAutoPilotCheck');
+      apCheck.checked = vm.autoPilot;
+      apCheck.addEventListener('change', (e) => {
+        vm.autoPilot = e.target.checked;
+      });
+
+      const intRange = document.getElementById('videoIntervalRange');
+      intRange.value = vm.autoPilotInterval;
+      intRange.addEventListener('input', (e) => {
+        document.getElementById('vIntervalVal').textContent = e.target.value;
+        vm.autoPilotInterval = parseInt(e.target.value);
+      });
     }
+  }
+
+  renderVideoList() {
+    const list = document.getElementById('videoList');
+    if (!list) return;
+
+    const videos = this.scene.videoManager.getVideoList();
+    list.innerHTML = '';
+
+    videos.forEach(v => {
+      const div = document.createElement('div');
+      div.className = 'video-item';
+      if (this.selectedVideoId === v.id) div.classList.add('selected');
+
+      let statusIcon = '';
+      if (v.status === 'loading') statusIcon = '⏳';
+      else if (v.status === 'error') statusIcon = '⚠️';
+
+      let noteBadge = '';
+      if (v.assignedNote !== null) {
+        noteBadge = `<span class="note-badge">Note ${v.assignedNote}</span>`;
+      }
+
+      div.innerHTML = `
+            <div class="info">${statusIcon} ${v.name}</div>
+            ${noteBadge}
+            <button class="remove-btn">×</button>
+          `;
+
+      div.addEventListener('click', (e) => {
+        // Handle remove click
+        if (e.target.classList.contains('remove-btn')) {
+          this.scene.videoManager.removeVideo(v.id);
+          if (this.selectedVideoId === v.id) this.selectedVideoId = null;
+          this.renderVideoList();
+          e.stopPropagation();
+          return;
+        }
+
+        // Select
+        this.selectedVideoId = v.id;
+        this.renderVideoList();
+      });
+
+      list.appendChild(div);
+    });
   }
 
   reflectPresetChange(mode, newValue) {

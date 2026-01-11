@@ -5,6 +5,8 @@ import { PhotoPolygonizer } from './PhotoPolygonizer';
 import { P5Manager } from './P5Manager';
 import { AudioReactiveParticles } from './AudioReactiveParticles';
 import { CommonEffects } from './CommonEffects'; // v1.3
+import { VideoManager } from './VideoManager';
+
 
 export class SceneManager {
     constructor() {
@@ -47,7 +49,10 @@ export class SceneManager {
         this.p5Manager = new P5Manager('p5-container');
         this.p5Manager.init(); // Initialize p5 instance
         this.photoPolygonizer = new PhotoPolygonizer(this.scene);
+        this.p5Manager.init(); // Initialize p5 instance
+        this.photoPolygonizer = new PhotoPolygonizer(this.scene);
         this.particleSpawner = new AudioReactiveParticles(this.scene);
+        this.videoManager = new VideoManager(this.scene);
 
         // Mode1 Logic State
         this.lastSpawnTime = 0;
@@ -116,7 +121,28 @@ export class SceneManager {
 
                 // Set default shader params
                 this.effects.setVMode('Noise');
+                // Set default shader params
+                this.effects.setVMode('Noise');
+            } else if (this.currentMode === 'Video') {
+                if (this.layers.length > 0) this.layers.forEach(l => l.group.visible = false);
+                this.photoPolygonizer.group.visible = false;
+                if (this.particleSpawner) this.particleSpawner.setVisible(false);
+
+                this.videoManager.setVisible(true);
+                // Video Manager handles its own mesh visibility
+
+                // Disable complex shader effects? OR apply them?
+                // Requirement: "CC for Video Mode". If we apply complex shader effects ON TOP,
+                // they might conflict with Video CCs. 
+                // VideoManager has its own shader for Brightness/Contrast/Mix.
+                // So VisualEffectManager receives the output of VideoManager scene?
+                // VideoManager adds a mesh to `this.scene`. 
+                // So `VisualEffectManager.render(scene)` catches it.
+                // We just need to make sure VideoManager's mesh is in front or valid.
+                // And VisualEffectManager works in "3D" mode (passthrough) to show the video.
+                this.effects.setVMode('3D');
             } else { // 3D Standard
+
                 if (this.layers.length === 0) this.setupLayers();
                 this.layers.forEach(l => l.group.visible = true);
                 this.photoPolygonizer.group.visible = false;
@@ -311,8 +337,14 @@ export class SceneManager {
             // P5Manager.update(audio, midiRaw.ccs) としていたが、統一する
         }
 
-        const camZ = 5 + midi.cc3 * 15;
+        // Camera Logic
+        // Reverted to simple Z-axis zoom
+        const zoomParam = midi.cc8 !== undefined ? midi.cc8 : midi.cc3;
+        const camZ = 5 + zoomParam * 35; // Range 5-40
+
+        this.camera.position.x = 0;
         this.camera.position.z = camZ;
+        this.camera.lookAt(0, 0, 0);
 
         if (this.currentMode === '2D') {
             this.p5Manager.update(audio, midi);
@@ -415,10 +447,21 @@ export class SceneManager {
             // Nothing to update for scene objects as they are hidden
         }
 
+        // Update Video Manager
+        if (this.currentMode === 'Video') {
+            this.videoManager.update(performance.now(), midi);
+        }
+
         // v1.3: VisualEffectManagerでシーンを描画し、その結果をCommonEffectsに渡す
         // これにより Mode 1, 2, 4 すべてで共通パイプラインを通る
         const sourceTexture = this.effects.render(audio, midi);
         this.commonEffects.render(audio, midi, sourceTexture);
+    }
+
+    onNoteOn(note, velocity) {
+        if (this.currentMode === 'Video') {
+            this.videoManager.triggerNote(note);
+        }
     }
 
     onResize() {
@@ -430,3 +473,4 @@ export class SceneManager {
         // P5 handles resize internally via windowResized
     }
 }
+
