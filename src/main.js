@@ -95,8 +95,6 @@ class App {
                 <option value="3D" selected>1: 3D Mode</option>
                 <option value="Photo">2: Photo Mode</option>
                 <option value="2D">3: 2D Mode</option>
-                <option value="Photo">2: Photo Mode</option>
-                <option value="2D">3: 2D Mode</option>
                 <option value="Shader">4: Shader FX</option>
                 <option value="Video">5: Video Mode</option>
             </select>

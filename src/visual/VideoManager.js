@@ -309,15 +309,19 @@ export class VideoManager {
         this.material.uniforms.mixVal.value = this.mixValue;
 
         // 2. MIDI CC Application (Video Mode Specific)
-        // CC1: Brightness
-        if (midi.cc1 !== undefined) this.material.uniforms.brightness.value = midi.cc1 * 2.0; // 0..2
-        // CC2: Contrast
-        if (midi.cc2 !== undefined) this.material.uniforms.contrast.value = midi.cc2 * 2.0;
-        // CC3: Saturation
+        // CC1: Brightness - Clamp 0.2 to 2.0 (Avoid pure black)
+        if (midi.cc1 !== undefined) this.material.uniforms.brightness.value = 0.2 + midi.cc1 * 1.8;
+
+        // CC2: Contrast - Clamp 0.5 to 2.5
+        if (midi.cc2 !== undefined) this.material.uniforms.contrast.value = 0.5 + midi.cc2 * 2.0;
+
+        // CC3: Saturation - Clamp 0.0 to 2.0
         if (midi.cc3 !== undefined) this.material.uniforms.saturation.value = midi.cc3 * 2.0;
+
         // CC4: Hue
         if (midi.cc4 !== undefined) this.material.uniforms.hueShift.value = midi.cc4;
-        // CC5: Blur (Not implemented in simpler shader yet, can skip or add)
+
+        // CC5: Blur
         // CC6: Pixelate
         if (midi.cc6 !== undefined) this.material.uniforms.pixelate.value = (midi.cc6 > 0.05) ? midi.cc6 : 0.0;
 
