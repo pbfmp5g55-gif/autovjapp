@@ -625,6 +625,9 @@ class App {
         // Select
         this.selectedVideoId = v.id;
         this.renderVideoList();
+
+        // Preview Playback
+        this.scene.videoManager.triggerVideo(v.id);
       });
 
       list.appendChild(div);

@@ -126,12 +126,8 @@ export class VideoManager {
         });
 
         // Fullscreen Quad
-        this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(30, 18), this.material); // Aspect approx 16:9, scale covers view
-        // Adjust scale to cover camera view at z=0 (camera at z=5? no, usually scene logic handles it)
-        // SceneManager camera is at z=5.
-        // Screen aspect: width/height. Plane 2*aspect, 2.
-        // Let's set a large scale to be safe, or fit to frustum.
-        // For now hardcode large.
+        this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(30 * 2, 18 * 2), this.material);
+        this.mesh.position.z = -20; // Ensure it is in front of camera (Camera z=5) and behind overlays
         this.mesh.visible = false;
         this.scene.add(this.mesh);
     }
