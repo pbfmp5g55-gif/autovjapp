@@ -7,6 +7,7 @@ import { AudioReactiveParticles } from './AudioReactiveParticles';
 import { CommonEffects } from './CommonEffects'; // v1.3
 import { BlobSwarmMode } from '../modes/BlobSwarmMode'; // New Mode
 import { VideoManager } from './VideoManager'; // Video Mode
+import { TVStaticMode } from '../modes/TVStaticMode'; // TV Static Mode
 
 export class SceneManager {
     constructor() {
@@ -52,6 +53,7 @@ export class SceneManager {
         this.particleSpawner = new AudioReactiveParticles(this.scene);
         this.blobSwarmMode = new BlobSwarmMode(this.scene, this.camera, this.renderer);
         this.videoManager = new VideoManager(this.scene); // Video Mode
+        this.tvStaticMode = new TVStaticMode(this.scene, this.camera, this.renderer); // TV Static
 
         // New Mode
 
@@ -100,6 +102,7 @@ export class SceneManager {
             if (this.particleSpawner) this.particleSpawner.setVisible(false);
             this.blobSwarmMode.setVisible(false);
             this.videoManager.setVisible(false);
+            this.tvStaticMode.setVisible(false);
 
             if (this.currentMode === 'Photo') {
                 this.photoPolygonizer.group.visible = true;
@@ -113,6 +116,9 @@ export class SceneManager {
                 this.effects.setVMode('3D');
             } else if (this.currentMode === 'Video') {
                 this.videoManager.setVisible(true);
+                this.effects.setVMode('3D');
+            } else if (this.currentMode === 'NoiseReactor') {
+                this.noiseReactorMode.setVisible(true);
                 this.effects.setVMode('3D');
             } else { // 3D Standard
 
@@ -199,6 +205,14 @@ export class SceneManager {
                 const next = presets[Math.floor(Math.random() * presets.length)].id;
                 this.blobSwarmMode.applyPreset(next);
                 console.log('Auto Preset (Holo):', next);
+                return next;
+            }
+        } else if (this.currentMode === 'TVStatic') {
+            if (this.tvStaticMode && this.tvStaticMode.presets.length > 0) {
+                const presets = this.tvStaticMode.presets;
+                const next = presets[Math.floor(Math.random() * presets.length)].id;
+                this.tvStaticMode.applyPreset(next);
+                console.log('Auto Preset (TVStatic):', next);
                 return next;
             }
         }
@@ -310,6 +324,12 @@ export class SceneManager {
         }
     }
 
+    setTVStaticPreset(id) {
+        if (this.tvStaticMode) {
+            this.tvStaticMode.applyPreset(id);
+        }
+    }
+
     onNoteOn(note, vel) {
         // Dispatch MIDI events to active manager
         if (this.videoManager) {
@@ -355,118 +375,119 @@ export class SceneManager {
         } else if (this.currentMode === 'HoloBlob') {
             this.blobSwarmMode.update(audio);
             // Bloom Control?
-            if (this.blobSwarmMode.currentPreset.post.bloom) {
-                this.commonEffects.bloomStrength = this.blobSwarmMode.currentPreset.post.bloomStrength;
-            } else {
-                this.commonEffects.bloomStrength = 0;
+        } else {
+            this.commonEffects.bloomStrength = 0;
+        }
+    } else if(this.currentMode === 'TVStatic') {
+    this.tvStaticMode.update(audio);
+} else if (this.currentMode === 'Video') {
+    this.videoManager.update(performance.now(), midi);
+} else if (this.currentMode === '3D') {
+    // Check Spawn
+    if (this.particleSpawner.isActive) {
+        this.particleSpawner.update(audio, midi);
+    } else {
+        // --- Mode 1 Logic: Audio Driven Polygon Swarm ---
+
+        const now = performance.now();
+        const rms = audio.rms || 0;
+
+        // 1. Calculate Target Count
+        // Quiet: 1-3, Normal: 4-7, High: 8-15, Peak: 16-30
+        // Simple mapping logic
+        let target = 0;
+        if (rms < 0.2) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0, 0.2, 1, 3));
+        else if (rms < 0.5) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.2, 0.5, 4, 7));
+        else if (rms < 0.8) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.5, 0.8, 8, 15));
+        else target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.8, 1.0, 16, 30));
+
+        // Clamp
+        target = Math.max(1, Math.min(30, target));
+        this.targetCount = target;
+
+        // Count Active Layers
+        const activeLayers = this.layers.filter(l => l.isActive);
+        const activeCount = activeLayers.length;
+        this.currentCount = activeCount;
+
+        // 2. Spawn Logic
+        // Condition: Beat detected AND activeCount < targetCount AND Cooldown check
+        const isBeat = audio.beat > 0.6; // Threshold for beat
+        const spawnCooldownTime = 200; // ms 
+
+        // Force spawn if less than min (3) to ensure visibility
+        const forceSpawn = activeCount < 3;
+
+        if ((forceSpawn || (isBeat && activeCount < target)) && (now - this.lastSpawnTime > spawnCooldownTime)) {
+            // Find RANDOM inactive layer
+            const inactiveLayers = this.layers.filter(l => !l.isActive);
+            if (inactiveLayers.length > 0) {
+                const inactiveLayer = inactiveLayers[Math.floor(Math.random() * inactiveLayers.length)];
+                inactiveLayer.spawn();
+                this.lastSpawnTime = now;
             }
-        } else if (this.currentMode === 'Video') {
-            this.videoManager.update(performance.now(), midi);
-        } else if (this.currentMode === '3D') {
-            // Check Spawn
-            if (this.particleSpawner.isActive) {
-                this.particleSpawner.update(audio, midi);
-            } else {
-                // --- Mode 1 Logic: Audio Driven Polygon Swarm ---
-
-                const now = performance.now();
-                const rms = audio.rms || 0;
-
-                // 1. Calculate Target Count
-                // Quiet: 1-3, Normal: 4-7, High: 8-15, Peak: 16-30
-                // Simple mapping logic
-                let target = 0;
-                if (rms < 0.2) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0, 0.2, 1, 3));
-                else if (rms < 0.5) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.2, 0.5, 4, 7));
-                else if (rms < 0.8) target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.5, 0.8, 8, 15));
-                else target = Math.floor(THREE.MathUtils.mapLinear(rms, 0.8, 1.0, 16, 30));
-
-                // Clamp
-                target = Math.max(1, Math.min(30, target));
-                this.targetCount = target;
-
-                // Count Active Layers
-                const activeLayers = this.layers.filter(l => l.isActive);
-                const activeCount = activeLayers.length;
-                this.currentCount = activeCount;
-
-                // 2. Spawn Logic
-                // Condition: Beat detected AND activeCount < targetCount AND Cooldown check
-                const isBeat = audio.beat > 0.6; // Threshold for beat
-                const spawnCooldownTime = 200; // ms 
-
-                // Force spawn if less than min (3) to ensure visibility
-                const forceSpawn = activeCount < 3;
-
-                if ((forceSpawn || (isBeat && activeCount < target)) && (now - this.lastSpawnTime > spawnCooldownTime)) {
-                    // Find RANDOM inactive layer
-                    const inactiveLayers = this.layers.filter(l => !l.isActive);
-                    if (inactiveLayers.length > 0) {
-                        const inactiveLayer = inactiveLayers[Math.floor(Math.random() * inactiveLayers.length)];
-                        inactiveLayer.spawn();
-                        this.lastSpawnTime = now;
-                    }
-                }
-
-                // 3. Disappear Logic
-                // Condition: activeCount > targetCount persisted
-                if (activeCount > target) {
-                    this.disappearTimer += 16; // approx ms per frame
-                    if (this.disappearTimer > 500) { // Delayed reaction (0.5s)
-                        // Find one active layer to remove. 
-                        // To look natural, maybe remove random or oldest? 
-                        // Let's remove the one with highest index currently active (often 'outer' ones in some layouts) or just random.
-                        // Random prevents pattern artifacts.
-                        const activeCandidates = this.layers.filter(l => l.isActive && !l.isDisappearing);
-                        if (activeCandidates.length > 0) {
-                            const toRemove = activeCandidates[Math.floor(Math.random() * activeCandidates.length)];
-
-                            // 4. Determine Disappear Type
-                            // Beat/Low -> Suck, Mid -> Shrink, Low RMS -> Fade
-                            let type = 'fade'; // Default
-
-                            // Priority: Beat > Low > Mid > RMS
-                            if (audio.beat > 0.7 || audio.low > 0.6) {
-                                type = 'suck';
-                            } else if (audio.mid > 0.6) {
-                                type = 'shrink';
-                            } else {
-                                type = 'fade';
-                            }
-
-                            toRemove.disappear(type);
-                            this.disappearTimer = 0; // Reset timer after action
-                        }
-                    }
-                } else {
-                    this.disappearTimer = 0;
-                }
-
-                // 5. Update All Layers
-                // Also apply global motion (slow rotation of the whole group/camera perception)
-                // SceneManager usually handles camera z, but here we can rotate individual layers in VJLayer.js or here.
-                // VJLayer.js handles its own rotation.
-
-                this.layers.forEach(layer => {
-                    layer.update(audio, midi, midi);
-                });
-            }
-        } else if (this.currentMode === 'Shader') {
-            // Nothing to update for scene objects as they are hidden
         }
 
-        // v1.3: VisualEffectManagerでシーンを描画し、その結果をCommonEffectsに渡す
-        // これにより Mode 1, 2, 4 すべてで共通パイプラインを通る
-        const sourceTexture = this.effects.render(audio, midi);
-        this.commonEffects.render(audio, midi, sourceTexture);
+        // 3. Disappear Logic
+        // Condition: activeCount > targetCount persisted
+        if (activeCount > target) {
+            this.disappearTimer += 16; // approx ms per frame
+            if (this.disappearTimer > 500) { // Delayed reaction (0.5s)
+                // Find one active layer to remove. 
+                // To look natural, maybe remove random or oldest? 
+                // Let's remove the one with highest index currently active (often 'outer' ones in some layouts) or just random.
+                // Random prevents pattern artifacts.
+                const activeCandidates = this.layers.filter(l => l.isActive && !l.isDisappearing);
+                if (activeCandidates.length > 0) {
+                    const toRemove = activeCandidates[Math.floor(Math.random() * activeCandidates.length)];
+
+                    // 4. Determine Disappear Type
+                    // Beat/Low -> Suck, Mid -> Shrink, Low RMS -> Fade
+                    let type = 'fade'; // Default
+
+                    // Priority: Beat > Low > Mid > RMS
+                    if (audio.beat > 0.7 || audio.low > 0.6) {
+                        type = 'suck';
+                    } else if (audio.mid > 0.6) {
+                        type = 'shrink';
+                    } else {
+                        type = 'fade';
+                    }
+
+                    toRemove.disappear(type);
+                    this.disappearTimer = 0; // Reset timer after action
+                }
+            }
+        } else {
+            this.disappearTimer = 0;
+        }
+
+        // 5. Update All Layers
+        // Also apply global motion (slow rotation of the whole group/camera perception)
+        // SceneManager usually handles camera z, but here we can rotate individual layers in VJLayer.js or here.
+        // VJLayer.js handles its own rotation.
+
+        this.layers.forEach(layer => {
+            layer.update(audio, midi, midi);
+        });
+    }
+} else if (this.currentMode === 'Shader') {
+    // Nothing to update for scene objects as they are hidden
+}
+
+// v1.3: VisualEffectManagerでシーンを描画し、その結果をCommonEffectsに渡す
+// これにより Mode 1, 2, 4 すべてで共通パイプラインを通る
+const sourceTexture = this.effects.render(audio, midi);
+this.commonEffects.render(audio, midi, sourceTexture);
     }
 
-    onResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.effects.onResize();
-        this.commonEffects.onResize(); // v1.3
-        // P5 handles resize internally via windowResized
-    }
+onResize() {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.effects.onResize();
+    this.commonEffects.onResize(); // v1.3
+    // P5 handles resize internally via windowResized
+    if (this.noiseReactorMode) this.noiseReactorMode.onResize();
+}
 }

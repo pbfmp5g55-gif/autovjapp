@@ -1,0 +1,62 @@
+[
+    {
+        "id": "classic_crt",
+        "name": "Classic CRT",
+        "amount": 0.4,
+        "contrast": 1.1,
+        "grainSize": 2.0,
+        "flickerSpeed": 1.0,
+        "scanlines": 0.6,
+        "horizontalJitter": 0.1,
+        "vignette": 0.8,
+        "mono": true
+    },
+    {
+        "id": "harsh_static",
+        "name": "Harsh Static",
+        "amount": 0.8,
+        "contrast": 1.8,
+        "grainSize": 1.0,
+        "flickerSpeed": 5.0,
+        "scanlines": 0.2,
+        "horizontalJitter": 0.0,
+        "vignette": 0.3,
+        "mono": true
+    },
+    {
+        "id": "coarse_snow",
+        "name": "Coarse Snow",
+        "amount": 0.5,
+        "contrast": 1.0,
+        "grainSize": 5.0,
+        "flickerSpeed": 0.5,
+        "scanlines": 0.0,
+        "horizontalJitter": 0.0,
+        "vignette": 0.5,
+        "mono": true
+    },
+    {
+        "id": "digital_noise",
+        "name": "Digital Noise",
+        "amount": 0.6,
+        "contrast": 1.5,
+        "grainSize": 4.0,
+        "flickerSpeed": 0.2,
+        "scanlines": 0.1,
+        "horizontalJitter": 0.4,
+        "vignette": 0.0,
+        "mono": false
+    },
+    {
+        "id": "silent_idle",
+        "name": "Silent Idle",
+        "amount": 0.1,
+        "contrast": 0.8,
+        "grainSize": 1.5,
+        "flickerSpeed": 0.1,
+        "scanlines": 0.4,
+        "horizontalJitter": 0.0,
+        "vignette": 0.6,
+        "mono": true
+    }
+]

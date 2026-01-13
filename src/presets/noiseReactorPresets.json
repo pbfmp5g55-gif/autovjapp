@@ -1,0 +1,242 @@
+[
+    {
+        "id": "aurora_flow",
+        "name": "Aurora Flow",
+        "renderer": "three",
+        "noise": {
+            "type": "flow",
+            "scale": 1.5,
+            "detail": 4.0,
+            "flowSpeed": 0.2,
+            "warpStrength": 0.35,
+            "warpScale": 1.2,
+            "contrast": 1.1,
+            "quantize": 0.0
+        },
+        "color": {
+            "mode": "rainbow",
+            "hueShiftSpeed": 0.05,
+            "saturation": 0.8,
+            "brightness": 1.0
+        },
+        "feedback": {
+            "mode": "on",
+            "decay": 0.96,
+            "smear": 0.2
+        },
+        "reactive": {
+            "intensity": 0.85,
+            "onsetBurst": 0.35
+        }
+    },
+    {
+        "id": "ink_bloom",
+        "name": "Ink Bloom",
+        "renderer": "three",
+        "noise": {
+            "type": "flow",
+            "scale": 2.0,
+            "detail": 3.0,
+            "flowSpeed": 0.1,
+            "warpStrength": 0.5,
+            "warpScale": 0.8,
+            "contrast": 1.5,
+            "quantize": 0.0
+        },
+        "color": {
+            "mode": "mono",
+            "hueShiftSpeed": 0.0,
+            "saturation": 0.0,
+            "brightness": 1.0
+        },
+        "feedback": {
+            "mode": "on",
+            "decay": 0.94,
+            "smear": 0.5
+        },
+        "reactive": {
+            "intensity": 0.6,
+            "onsetBurst": 0.8
+        }
+    },
+    {
+        "id": "liquid_marble",
+        "name": "Liquid Marble",
+        "renderer": "three",
+        "noise": {
+            "type": "flow",
+            "scale": 1.0,
+            "detail": 2.0,
+            "flowSpeed": 0.4,
+            "warpStrength": 0.8,
+            "warpScale": 3.0,
+            "contrast": 1.0,
+            "quantize": 0.0
+        },
+        "color": {
+            "mode": "gradient",
+            "hueShiftSpeed": 0.2,
+            "saturation": 1.0,
+            "brightness": 1.0
+        },
+        "feedback": {
+            "mode": "on",
+            "decay": 0.90,
+            "smear": 0.1
+        },
+        "reactive": {
+            "intensity": 1.0,
+            "onsetBurst": 0.5
+        }
+    },
+    {
+        "id": "smoke_minimal",
+        "name": "Smoke Minimal",
+        "renderer": "three",
+        "noise": {
+            "type": "flow",
+            "scale": 2.5,
+            "detail": 1.0,
+            "flowSpeed": 0.15,
+            "warpStrength": 0.2,
+            "warpScale": 0.5,
+            "contrast": 0.9,
+            "quantize": 0.0
+        },
+        "color": {
+            "mode": "mono",
+            "hueShiftSpeed": 0.0,
+            "saturation": 0.0,
+            "brightness": 0.6
+        },
+        "feedback": {
+            "mode": "auto",
+            "decay": 0.98,
+            "smear": 0.3
+        },
+        "reactive": {
+            "intensity": 0.5,
+            "onsetBurst": 0.2
+        }
+    },
+    {
+        "id": "white_noise_storm",
+        "name": "White Noise Storm",
+        "renderer": "three",
+        "noise": {
+            "type": "granular",
+            "scale": 5.0,
+            "detail": 6.0,
+            "flowSpeed": 1.0,
+            "warpStrength": 0.0,
+            "warpScale": 1.0,
+            "contrast": 1.3,
+            "quantize": 0.0
+        },
+        "color": {
+            "mode": "mono",
+            "hueShiftSpeed": 0.0,
+            "saturation": 0.0,
+            "brightness": 1.0
+        },
+        "feedback": {
+            "mode": "off",
+            "decay": 0.0,
+            "smear": 0.0
+        },
+        "reactive": {
+            "intensity": 1.0,
+            "onsetBurst": 1.0
+        }
+    },
+    {
+        "id": "moire_pulse",
+        "name": "Moire Pulse",
+        "renderer": "three",
+        "noise": {
+            "type": "interference",
+            "scale": 3.0,
+            "detail": 1.0,
+            "flowSpeed": 0.5,
+            "warpStrength": 0.4,
+            "warpScale": 1.0,
+            "contrast": 2.0,
+            "quantize": 0.0
+        },
+        "color": {
+            "mode": "gradient",
+            "hueShiftSpeed": 0.5,
+            "saturation": 1.0,
+            "brightness": 1.0
+        },
+        "feedback": {
+            "mode": "off",
+            "decay": 0.0,
+            "smear": 0.0
+        },
+        "reactive": {
+            "intensity": 1.0,
+            "onsetBurst": 0.5
+        }
+    },
+    {
+        "id": "crt_glitch",
+        "name": "CRT Glitch",
+        "renderer": "three",
+        "noise": {
+            "type": "glitch",
+            "scale": 1.0,
+            "detail": 1.0,
+            "flowSpeed": 1.0,
+            "warpStrength": 0.5,
+            "warpScale": 0.5,
+            "contrast": 1.2,
+            "quantize": 0.2
+        },
+        "color": {
+            "mode": "gradient",
+            "hueShiftSpeed": 2.0,
+            "saturation": 0.5,
+            "brightness": 1.1
+        },
+        "feedback": {
+            "mode": "off",
+            "decay": 0.5,
+            "smear": 0.0
+        },
+        "reactive": {
+            "intensity": 1.0,
+            "onsetBurst": 0.8
+        }
+    },
+    {
+        "id": "pixel_melt",
+        "name": "Pixel Melt",
+        "renderer": "three",
+        "noise": {
+            "type": "glitch",
+            "scale": 2.0,
+            "detail": 2.0,
+            "flowSpeed": 0.1,
+            "warpStrength": 1.0,
+            "warpScale": 1.0,
+            "contrast": 1.2,
+            "quantize": 0.8
+        },
+        "color": {
+            "mode": "rainbow",
+            "hueShiftSpeed": 0.1,
+            "saturation": 1.0,
+            "brightness": 1.0
+        },
+        "feedback": {
+            "mode": "on",
+            "decay": 0.85,
+            "smear": 1.0
+        },
+        "reactive": {
+            "intensity": 0.9,
+            "onsetBurst": 0.6
+        }
+    }
+]

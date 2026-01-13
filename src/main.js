@@ -98,6 +98,7 @@ class App {
                 <option value="Shader">4: Shader FX</option>
                 <option value="Video">5: Video Mode</option>
                 <option value="HoloBlob">6: Holo Blob</option>
+                <option value="TVStatic">7: TV Static</option>
             </select>
 
 
@@ -585,6 +586,7 @@ class App {
         vm.autoPilotInterval = parseInt(e.target.value);
       });
     } else if (mode === 'HoloBlob') {
+      // ... existing HoloBlob (Use tool context to match exactly or just append new block)
       const presets = this.scene.blobSwarmMode ? this.scene.blobSwarmMode.presets : [];
       let options = '';
       presets.forEach(p => {
@@ -628,8 +630,36 @@ class App {
           }
         });
       }
+    } else if (mode === 'TVStatic') {
+      const presets = this.scene.tvStaticMode ? this.scene.tvStaticMode.presets : [];
+      let options = '';
+      presets.forEach(p => {
+        options += `<option value="${p.id}">${p.name}</option>`;
+      });
+
+      const html = `
+             <div class="control-row">
+                <label>Preset:</label>
+                <select id="tvStaticPresetSelect">
+                    ${options}
+                </select>
+            </div>
+             <div class="control-row" style="margin-top:5px; font-size:0.8rem; color:#aaa;">
+                <span>Retro CRT / Sandstorm / Digital Glitch</span>
+            </div>
+        `;
+      container.innerHTML = html;
+
+      const sel = document.getElementById('tvStaticPresetSelect');
+      if (sel && this.scene.tvStaticMode) {
+        sel.value = this.scene.tvStaticMode.currentPreset.id;
+        sel.addEventListener('change', (e) => {
+          this.scene.setTVStaticPreset(e.target.value);
+        });
+      }
     }
   }
+
 
 
   renderVideoList() {
@@ -697,8 +727,13 @@ class App {
     } else if (mode === 'HoloBlob') {
       const el = document.getElementById('holoPresetSelect');
       if (el) el.value = newValue;
+    } else if (mode === 'TVStatic') {
+      const el = document.getElementById('tvStaticPresetSelect');
+      if (el) el.value = newValue;
     }
   }
+
+
 
   async start() {
     await this.audio.init();
