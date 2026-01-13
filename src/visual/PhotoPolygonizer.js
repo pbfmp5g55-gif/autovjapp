@@ -133,23 +133,11 @@ export class PhotoPolygonizer {
             shape.lineTo(p2[0] + this.centerOffset.x, p2[1] + this.centerOffset.y);
             shape.lineTo(p0[0] + this.centerOffset.x, p0[1] + this.centerOffset.y);
 
-            // Create 3D Geometry (Extrude for thickness)
-            const depth = 20 + Math.random() * 30; // Substantial thickness
-            const extrudeSettings = {
-                depth: depth,
-                bevelEnabled: false // Flat sides look cleaner for glitch art
-            };
-            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-            // Use Standard Material for lighting/shading
-            const material = new THREE.MeshStandardMaterial({
+            const geometry = new THREE.ShapeGeometry(shape);
+            const material = new THREE.MeshBasicMaterial({
                 color: color,
-                roughness: 0.4,
-                metalness: 0.1,
-                emissive: color,
-                emissiveIntensity: 0.25,
-                flatShading: true,
-                side: THREE.DoubleSide
+                side: THREE.DoubleSide,
+                // wireframe: true // Debug
             });
 
             const mesh = new THREE.Mesh(geometry, material);
@@ -159,7 +147,12 @@ export class PhotoPolygonizer {
                 originalPos: mesh.position.clone(),
                 center: new THREE.Vector3(cx + this.centerOffset.x, cy + this.centerOffset.y, 0),
                 color: new THREE.Color(color),
-                random: Math.random()
+                random: Math.random(),
+                rotSpeed: new THREE.Vector3(
+                    (Math.random() - 0.5) * 2.0,
+                    (Math.random() - 0.5) * 2.0,
+                    (Math.random() - 0.5) * 2.0
+                )
             };
 
             this.group.add(mesh);
@@ -280,30 +273,20 @@ export class PhotoPolygonizer {
                 const centerP = points[pIndex];
                 const color = this.sampleColor(imageData, centerP[0], centerP[1]);
 
-                // Create 3D Geometry
-                const depth = 20 + Math.random() * 30;
-                const extrudeSettings = {
-                    depth: depth,
-                    bevelEnabled: false
-                };
-                const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-                // Standard Material
-                const material = new THREE.MeshStandardMaterial({
-                    color: color,
-                    roughness: 0.4,
-                    metalness: 0.1,
-                    emissive: color,
-                    emissiveIntensity: 0.25,
-                    flatShading: true
-                });
+                const geometry = new THREE.ShapeGeometry(shape);
+                const material = new THREE.MeshBasicMaterial({ color: color });
                 const mesh = new THREE.Mesh(geometry, material);
 
                 mesh.userData = {
                     originalPos: mesh.position.clone(),
                     center: new THREE.Vector3(centerP[0] + this.centerOffset.x, centerP[1] + this.centerOffset.y, 0),
                     color: new THREE.Color(color),
-                    random: Math.random()
+                    random: Math.random(),
+                    rotSpeed: new THREE.Vector3(
+                        (Math.random() - 0.5) * 2.0,
+                        (Math.random() - 0.5) * 2.0,
+                        (Math.random() - 0.5) * 2.0
+                    )
                 };
 
                 this.group.add(mesh);
@@ -339,85 +322,97 @@ export class PhotoPolygonizer {
         const time = performance.now() * 0.001;
         const beat = audio.beat;
         const bass = audio.low;
+        const high = audio.high;
 
-        // CC Mapping
-        // CC1: Intensity (Scale Z)
-        // CC2: Hue Shift
-        // CC3: Zoom (handled by cam)
-        // CC4: Deform / Explode
+        // CC4: Explosion / Scatter Control
+        // Moderate range: 0 to 15 (was 40, too much)
+        const explodeAmt = midi.cc4 * 15 + beat * 2;
+        const zDepth = midi.cc1 * 10 + bass * 10;
 
-        const explodeAmt = midi.cc4 * 5 + beat * 2;
-        const zDepth = midi.cc1 * 5 + bass * 5;
+        // Color shift speed
+        const hueSpeed = time * 0.2 + midi.cc2;
 
         this.meshes.forEach((mesh, i) => {
             const data = mesh.userData;
-            const dist = data.center.length() / 200; // Normalized distance
+            const dist = data.center.length() / 200;
 
-            // Base position starts from original
+            // --- 1. Position Dynamics ---
             let targetPos = data.originalPos.clone();
 
-            // 1. Wave Effect (Low Freq)
-            const wave = Math.sin(time * 2 + dist * 5) * bass * 20;
+            // Huge Explosion / Scatter
+            if (explodeAmt > 0.5) {
+                const centerDir = data.center.clone().normalize();
+                // Add noise to direction
+                centerDir.x += (data.random - 0.5);
+                centerDir.y += (data.random - 0.5);
+
+                // Scatter outwards
+                targetPos.add(centerDir.multiplyScalar(explodeAmt * (0.5 + data.random)));
+            }
+
+            // Wave / Wiggle
+            const wave = Math.sin(time * 2 + dist * 5 + i * 0.1) * (bass * 15 + zDepth);
             targetPos.z += wave;
 
-            // 2. Ripple Effect (Beat)
-            // A pulse traveling outwards
-            const rippleSpeed = 5.0;
-            const ripplePos = (time * rippleSpeed) % 10.0; // 0 to 10 cycle
-            const rippleDist = Math.abs(dist * 10 - ripplePos);
-            if (rippleDist < 1.0) {
-                const rippleForce = (1.0 - rippleDist) * beat * 30; // Push Z
-                targetPos.z += rippleForce;
+            // Orbiting / Swirling (cc9 Density -> Swirl)
+            if (midi.cc9 > 0.5) {
+                const angle = time + dist;
+                targetPos.x += Math.cos(angle) * 10 * midi.cc9;
+                targetPos.y += Math.sin(angle) * 10 * midi.cc9;
             }
 
-            // 3. Mode Specific Effects
-            if (this.mode === 'Delaunay') {
-                // Shard Explode (High Freq reaction)
-                // Scatter pieces outward sharply
-                const shard = audio.high * 50 * data.random;
-                const dir = data.center.clone().normalize();
-                targetPos.add(dir.multiplyScalar(shard * midi.cc4)); // CC4 scales explosion
+            // Lerp to target position
+            mesh.position.lerp(targetPos, 0.1); // Smooth transition
 
-                // Random Rotation on kick
-                if (beat > 0.5) {
-                    mesh.rotation.x += (Math.random() - 0.5) * 0.5;
-                    mesh.rotation.y += (Math.random() - 0.5) * 0.5;
-                }
-                // Damping rotation
-                mesh.rotation.x *= 0.9;
-                mesh.rotation.y *= 0.9;
+            // --- 2. Rotation ---
+            // "Genkei" (Prototype) preservation:
+            // Instead of continuous spin, wobble around 0 when active.
+            // Return to 0 when quiet/no-CC to show original image.
 
+            const rBase = midi.cc4 * 2.0; // Max 2 radians wiggle scaling
+            if (rBase > 0.1 || beat > 0.2) {
+                // Wobble rotation
+                const rotMult = 1.0 + high * 2.0;
+                const targetRotX = Math.sin(time * data.rotSpeed.x) * (rBase + beat * 0.5) * rotMult;
+                const targetRotY = Math.cos(time * data.rotSpeed.y) * (rBase + beat * 0.5) * rotMult;
+
+                mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, targetRotX, 0.1);
+                mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, targetRotY, 0.1);
+                mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, Math.sin(time) * midi.cc9, 0.1);
             } else {
-                // Stained Glass Breathing (Organic)
-                // Scale cells based on mid frequencies
-                const breath = 1.0 + Math.sin(time * 3 + i) * 0.1 * midi.cc4;
-                const audioScale = 1.0 + audio.mid * 0.5;
-                const totalScale = breath * audioScale;
-                mesh.scale.setScalar(totalScale);
-
-                // Gentle swaying
-                targetPos.x += Math.sin(time + dist) * 5 * midi.cc4;
-                targetPos.y += Math.cos(time + dist) * 5 * midi.cc4;
+                // Return to flat
+                mesh.rotation.x = THREE.MathUtils.lerp(mesh.rotation.x, 0, 0.1);
+                mesh.rotation.y = THREE.MathUtils.lerp(mesh.rotation.y, 0, 0.1);
+                mesh.rotation.z = THREE.MathUtils.lerp(mesh.rotation.z, 0, 0.1);
             }
 
-            // Apply Explode (General)
-            const dir = data.center.clone().normalize();
-            targetPos.add(dir.multiplyScalar(explodeAmt * data.random));
+            // --- 3. Scale ---
+            // Pulse on beat
+            const targetScale = 1.0 + (beat * 0.5 * data.random);
+            mesh.scale.setScalar(targetScale);
 
-            // Lerp to target
-            mesh.position.lerp(targetPos, 0.2);
 
-            // Color Hue Shift
-            if (midi.cc2 > 0.05) {
+            // --- 4. Color ---
+            if (midi.cc2 > 0.05 || beat > 0.9) {
                 const hsl = {};
                 data.color.getHSL(hsl);
-                mesh.material.color.setHSL(
-                    (hsl.h + midi.cc2 + time * 0.1) % 1.0,
-                    hsl.s,
-                    hsl.l
-                );
+
+                let h = hsl.h + hueSpeed; // Automatic Hue Shift
+                let s = hsl.s;
+                let l = hsl.l;
+
+                // Color Flash on Beat
+                if (beat > 0.9 && data.random > 0.9) {
+                    l = 0.8; // Bright flash
+                    s = 1.0;
+                    h += data.random; // Random hue
+                }
+
+                mesh.material.color.setHSL(h % 1.0, s, l);
+                mesh.material.needsUpdate = true;
             } else {
-                mesh.material.color.copy(data.color);
+                // Return to original color slowly
+                mesh.material.color.lerp(data.color, 0.1);
             }
         });
     }

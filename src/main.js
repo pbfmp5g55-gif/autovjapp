@@ -97,7 +97,11 @@ class App {
                 <option value="2D">3: 2D Mode</option>
                 <option value="Shader">4: Shader FX</option>
                 <option value="Video">5: Video Mode</option>
+                <option value="HoloBlob">6: Holo Blob</option>
             </select>
+
+
+
         </div>
 
         <!-- Sub Controls -->
@@ -332,7 +336,7 @@ class App {
       { key: 'cc5', label: 'CC5: Trails' },
       { key: 'cc6', label: 'CC6: Glow / Emissive' },
       { key: 'cc7', label: 'CC7: Contrast' },
-      { key: 'cc8', label: 'CC8: Zoom' },
+      { key: 'cc8', label: 'CC8: (Reserved)' },
       { key: 'cc9', label: 'CC9: Density' },
       { key: 'cc10', label: 'CC10: Size Variance' },
       { key: 'cc11', label: 'CC11: Noise Scale' },
@@ -580,8 +584,53 @@ class App {
         document.getElementById('vIntervalVal').textContent = e.target.value;
         vm.autoPilotInterval = parseInt(e.target.value);
       });
+    } else if (mode === 'HoloBlob') {
+      const presets = this.scene.blobSwarmMode ? this.scene.blobSwarmMode.presets : [];
+      let options = '';
+      presets.forEach(p => {
+        options += `<option value="${p.id}">${p.name}</option>`;
+      });
+
+      const html = `
+            <div class="control-row">
+                <label>Preset:</label>
+                <select id="holoPresetSelect">
+                    ${options}
+                </select>
+            </div>
+            <div class="control-row">
+                <label>Quality:</label>
+                <select id="holoQualitySelect">
+                    <option value="2">High (Default)</option>
+                    <option value="1">Medium</option>
+                    <option value="0">Low (Mobile)</option>
+                </select>
+            </div>
+             <div class="control-row" style="margin-top:5px; font-size:0.8rem; color:#aaa;">
+                <span>Iridescent Blob + Orb Swarm</span>
+            </div>
+        `;
+      container.innerHTML = html;
+
+      const sel = document.getElementById('holoPresetSelect');
+      if (sel && this.scene.blobSwarmMode) {
+        sel.value = this.scene.blobSwarmMode.currentPreset.id;
+        sel.addEventListener('change', (e) => {
+          this.scene.setHoloPreset(e.target.value);
+        });
+      }
+
+      const qSel = document.getElementById('holoQualitySelect');
+      if (qSel) {
+        qSel.addEventListener('change', (e) => {
+          if (this.scene.blobSwarmMode) {
+            this.scene.blobSwarmMode.setQuality(parseInt(e.target.value));
+          }
+        });
+      }
     }
   }
+
 
   renderVideoList() {
     const list = document.getElementById('videoList');
@@ -645,6 +694,9 @@ class App {
     } else if (mode === 'Shader') {
       const el = document.getElementById('shaderPresetSelect');
       if (el) el.value = newValue;
+    } else if (mode === 'HoloBlob') {
+      const el = document.getElementById('holoPresetSelect');
+      if (el) el.value = newValue;
     }
   }
 
@@ -675,17 +727,21 @@ class App {
     if (this.currentInputType === 'MIC') {
       const meter = document.getElementById('micMeterBar');
       if (meter) {
-        // RMS is roughly 0.0 to 1.0 (sometimes higher depending on engine normalisation)
-        // Visual scale needed
+        // RMS is roughly 0.0 to 1.0
         const vol = Math.min(audioData.rms * 300, 100);
         meter.style.width = vol + '%';
       }
     }
 
     const m = this.midi.ccs;
-    document.getElementById('midiMonitor').innerText =
-      `CC1:${m.cc1.toFixed(2)} CC2:${m.cc2.toFixed(2)} CC3:${m.cc3.toFixed(2)} CC4:${m.cc4.toFixed(2)} | CC5:${m.cc5.toFixed(2)} CC6:${m.cc6.toFixed(2)} CC7:${m.cc7.toFixed(2)} CC8:${m.cc8.toFixed(2)}`;
+    const monitor = document.getElementById('midiMonitor');
+    if (monitor) {
+      monitor.innerText = `CC1:${m.cc1.toFixed(2)} CC2:${m.cc2.toFixed(2)} CC3:${m.cc3.toFixed(2)} CC4:${m.cc4.toFixed(2)} | CC5:${m.cc5.toFixed(2)} CC6:${m.cc6.toFixed(2)} CC7:${m.cc7.toFixed(2)} CC8:${m.cc8.toFixed(2)}`;
+    }
   }
 }
 
 new App();
+
+
+

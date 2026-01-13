@@ -1,0 +1,302 @@
+[
+    {
+        "id": "holo_drift",
+        "name": "Holo Drift",
+        "renderer": "three",
+        "background": {
+            "mode": "solid",
+            "color": "#e0e5eb"
+        },
+        "blob": {
+            "subdiv": 5,
+            "scale": 1.0,
+            "displacementAmp": 0.4,
+            "displacementFreq": 1.5,
+            "rotationSpeed": 0.3,
+            "iridescence": 1.2,
+            "fresnelPower": 2.2,
+            "opacity": 1.0,
+            "hueShiftSpeed": 0.3
+        },
+        "orbs": {
+            "maxOrbs": 450,
+            "baseOrbs": 120,
+            "targetRange": 330,
+            "spawnRate": 100,
+            "despawnRate": 150,
+            "lifeSec": [
+                3.0,
+                8.0
+            ],
+            "size": [
+                0.03,
+                0.1
+            ],
+            "orbitRadius": [
+                0.8,
+                2.5
+            ],
+            "orbitSpeed": 0.6,
+            "noiseAmount": 0.5,
+            "glow": 0.6
+        },
+        "post": {
+            "bloom": true,
+            "bloomStrength": 0.5
+        },
+        "reactive": {
+            "intensity": 1.2,
+            "onsetBurst": 0.4
+        }
+    },
+    {
+        "id": "metaball_storm",
+        "name": "Metaball Storm",
+        "renderer": "three",
+        "background": {
+            "mode": "solid",
+            "color": "#778899"
+        },
+        "blob": {
+            "subdiv": 5,
+            "scale": 1.2,
+            "displacementAmp": 0.8,
+            "displacementFreq": 2.5,
+            "rotationSpeed": 0.8,
+            "iridescence": 1.0,
+            "fresnelPower": 1.5,
+            "opacity": 1.0,
+            "hueShiftSpeed": 0.5
+        },
+        "orbs": {
+            "maxOrbs": 800,
+            "baseOrbs": 300,
+            "targetRange": 500,
+            "spawnRate": 300,
+            "despawnRate": 300,
+            "lifeSec": [
+                1.0,
+                3.0
+            ],
+            "size": [
+                0.04,
+                0.12
+            ],
+            "orbitRadius": [
+                1.2,
+                3.5
+            ],
+            "orbitSpeed": 1.5,
+            "noiseAmount": 1.0,
+            "glow": 0.8
+        },
+        "post": {
+            "bloom": true,
+            "bloomStrength": 0.8
+        },
+        "reactive": {
+            "intensity": 1.5,
+            "onsetBurst": 0.8
+        }
+    },
+    {
+        "id": "prism_jelly",
+        "name": "Prism Jelly",
+        "renderer": "three",
+        "background": {
+            "mode": "solid",
+            "color": "#cccccc"
+        },
+        "blob": {
+            "subdiv": 4,
+            "scale": 1.1,
+            "displacementAmp": 0.5,
+            "displacementFreq": 1.0,
+            "rotationSpeed": 0.2,
+            "iridescence": 0.8,
+            "fresnelPower": 4.0,
+            "opacity": 0.7,
+            "hueShiftSpeed": 0.1
+        },
+        "orbs": {
+            "maxOrbs": 300,
+            "baseOrbs": 100,
+            "targetRange": 200,
+            "spawnRate": 50,
+            "despawnRate": 70,
+            "lifeSec": [
+                5.0,
+                10.0
+            ],
+            "size": [
+                0.06,
+                0.18
+            ],
+            "orbitRadius": [
+                1.5,
+                4.5
+            ],
+            "orbitSpeed": 0.2,
+            "noiseAmount": 0.2,
+            "glow": 0.4
+        },
+        "post": {
+            "bloom": false,
+            "bloomStrength": 0.3
+        },
+        "reactive": {
+            "intensity": 0.8,
+            "onsetBurst": 0.2
+        }
+    },
+    {
+        "id": "minimal_gallery",
+        "name": "Minimal Gallery",
+        "renderer": "three",
+        "background": {
+            "mode": "solid",
+            "color": "#f0f0f0"
+        },
+        "blob": {
+            "subdiv": 4,
+            "scale": 0.9,
+            "displacementAmp": 0.2,
+            "displacementFreq": 0.8,
+            "rotationSpeed": 0.1,
+            "iridescence": 0.3,
+            "fresnelPower": 3.0,
+            "opacity": 1.0,
+            "hueShiftSpeed": 0.05
+        },
+        "orbs": {
+            "maxOrbs": 180,
+            "baseOrbs": 60,
+            "targetRange": 120,
+            "spawnRate": 40,
+            "despawnRate": 40,
+            "lifeSec": [
+                4.0,
+                8.0
+            ],
+            "size": [
+                0.02,
+                0.04
+            ],
+            "orbitRadius": [
+                1.0,
+                2.2
+            ],
+            "orbitSpeed": 0.3,
+            "noiseAmount": 0.1,
+            "glow": 0.0
+        },
+        "post": {
+            "bloom": false,
+            "bloomStrength": 0.0
+        },
+        "reactive": {
+            "intensity": 0.5,
+            "onsetBurst": 0.2
+        }
+    },
+    {
+        "id": "neon_invert",
+        "name": "Neon Invert",
+        "renderer": "three",
+        "background": {
+            "mode": "solid",
+            "color": "#050505"
+        },
+        "blob": {
+            "subdiv": 5,
+            "scale": 1.0,
+            "displacementAmp": 0.5,
+            "displacementFreq": 2.0,
+            "rotationSpeed": 0.4,
+            "iridescence": 1.0,
+            "fresnelPower": 1.8,
+            "opacity": 1.0,
+            "hueShiftSpeed": 0.4
+        },
+        "orbs": {
+            "maxOrbs": 400,
+            "baseOrbs": 150,
+            "targetRange": 250,
+            "spawnRate": 80,
+            "despawnRate": 100,
+            "lifeSec": [
+                2.0,
+                5.0
+            ],
+            "size": [
+                0.04,
+                0.08
+            ],
+            "orbitRadius": [
+                1.0,
+                3.0
+            ],
+            "orbitSpeed": 0.8,
+            "noiseAmount": 0.8,
+            "glow": 1.0
+        },
+        "post": {
+            "bloom": true,
+            "bloomStrength": 1.2
+        },
+        "reactive": {
+            "intensity": 1.2,
+            "onsetBurst": 0.6
+        }
+    },
+    {
+        "id": "pulse_bloom",
+        "name": "Pulse Bloom",
+        "renderer": "three",
+        "background": {
+            "mode": "solid",
+            "color": "#f8f8f8"
+        },
+        "blob": {
+            "subdiv": 5,
+            "scale": 1.0,
+            "displacementAmp": 0.6,
+            "displacementFreq": 1.5,
+            "rotationSpeed": 0.2,
+            "iridescence": 0.8,
+            "fresnelPower": 2.0,
+            "opacity": 1.0,
+            "hueShiftSpeed": 0.2
+        },
+        "orbs": {
+            "maxOrbs": 600,
+            "baseOrbs": 100,
+            "targetRange": 500,
+            "spawnRate": 200,
+            "despawnRate": 200,
+            "lifeSec": [
+                1.0,
+                4.0
+            ],
+            "size": [
+                0.03,
+                0.07
+            ],
+            "orbitRadius": [
+                0.9,
+                3.5
+            ],
+            "orbitSpeed": 1.0,
+            "noiseAmount": 0.5,
+            "glow": 1.0
+        },
+        "post": {
+            "bloom": true,
+            "bloomStrength": 1.0
+        },
+        "reactive": {
+            "intensity": 1.5,
+            "onsetBurst": 1.0
+        }
+    }
+]

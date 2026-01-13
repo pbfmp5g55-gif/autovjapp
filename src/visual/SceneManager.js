@@ -5,7 +5,9 @@ import { PhotoPolygonizer } from './PhotoPolygonizer';
 import { P5Manager } from './P5Manager';
 import { AudioReactiveParticles } from './AudioReactiveParticles';
 import { CommonEffects } from './CommonEffects'; // v1.3
-import { VideoManager } from './VideoManager';
+import { BlobSwarmMode } from '../modes/BlobSwarmMode'; // New Mode
+
+
 
 
 export class SceneManager {
@@ -49,10 +51,11 @@ export class SceneManager {
         this.p5Manager = new P5Manager('p5-container');
         this.p5Manager.init(); // Initialize p5 instance
         this.photoPolygonizer = new PhotoPolygonizer(this.scene);
-        this.p5Manager.init(); // Initialize p5 instance
-        this.photoPolygonizer = new PhotoPolygonizer(this.scene);
         this.particleSpawner = new AudioReactiveParticles(this.scene);
-        this.videoManager = new VideoManager(this.scene);
+        this.blobSwarmMode = new BlobSwarmMode(this.scene, this.camera, this.renderer);
+
+        // New Mode
+
 
         // Mode1 Logic State
         this.lastSpawnTime = 0;
@@ -107,45 +110,27 @@ export class SceneManager {
             this.p5Manager.setVisible(false);
             if (threeCanvas) threeCanvas.style.display = 'block';
 
-            if (this.currentMode === 'Photo') {
-                this.layers.forEach(l => l.group.visible = false);
-                this.photoPolygonizer.group.visible = true;
-                if (this.particleSpawner) this.particleSpawner.setVisible(false); // Hide Spawner
+            // Reset all visibilities first
+            this.layers.forEach(l => l.group.visible = false);
+            this.photoPolygonizer.group.visible = false;
+            if (this.particleSpawner) this.particleSpawner.setVisible(false);
+            this.blobSwarmMode.setVisible(false);
 
+            if (this.currentMode === 'Photo') {
+                this.photoPolygonizer.group.visible = true;
                 // Disable shader effects for clearer photo view
                 this.effects.setVMode('3D');
             } else if (this.currentMode === 'Shader') {
-                if (this.layers.length > 0) this.layers.forEach(l => l.group.visible = false);
-                this.photoPolygonizer.group.visible = false;
-                if (this.particleSpawner) this.particleSpawner.setVisible(false); // Hide Spawner
-
                 // Set default shader params
                 this.effects.setVMode('Noise');
-                // Set default shader params
-                this.effects.setVMode('Noise');
-            } else if (this.currentMode === 'Video') {
-                if (this.layers.length > 0) this.layers.forEach(l => l.group.visible = false);
-                this.photoPolygonizer.group.visible = false;
-                if (this.particleSpawner) this.particleSpawner.setVisible(false);
-
-                this.videoManager.setVisible(true);
-                // Video Manager handles its own mesh visibility
-
-                // Disable complex shader effects? OR apply them?
-                // Requirement: "CC for Video Mode". If we apply complex shader effects ON TOP,
-                // they might conflict with Video CCs. 
-                // VideoManager has its own shader for Brightness/Contrast/Mix.
-                // So VisualEffectManager receives the output of VideoManager scene?
-                // VideoManager adds a mesh to `this.scene`. 
-                // So `VisualEffectManager.render(scene)` catches it.
-                // We just need to make sure VideoManager's mesh is in front or valid.
-                // And VisualEffectManager works in "3D" mode (passthrough) to show the video.
+            } else if (this.currentMode === 'HoloBlob') {
+                this.blobSwarmMode.setVisible(true);
                 this.effects.setVMode('3D');
             } else { // 3D Standard
 
+
                 if (this.layers.length === 0) this.setupLayers();
                 this.layers.forEach(l => l.group.visible = true);
-                this.photoPolygonizer.group.visible = false;
 
                 // Normal view
                 this.effects.setVMode('3D');
@@ -220,8 +205,17 @@ export class SceneManager {
             this.setShaderPreset(next);
             console.log('Auto Preset (Shader):', next);
             return next;
+        } else if (this.currentMode === 'HoloBlob') {
+            if (this.blobSwarmMode && this.blobSwarmMode.presets.length > 0) {
+                const presets = this.blobSwarmMode.presets;
+                const next = presets[Math.floor(Math.random() * presets.length)].id;
+                this.blobSwarmMode.applyPreset(next);
+                console.log('Auto Preset (Holo):', next);
+                return next;
+            }
         }
     }
+
 
     // 3D Mode
     applyPreset(presetId) {
@@ -321,6 +315,16 @@ export class SceneManager {
         this.p5Manager.setPreset(name);
     }
 
+    // HoloBlob Mode
+    setHoloPreset(id) {
+        if (this.blobSwarmMode) {
+            this.blobSwarmMode.applyPreset(id);
+        }
+    }
+
+
+
+
     // Main Loop
     update(audio, midiRaw) {
         // Mode 1 (3D) の場合の明るさ補正
@@ -337,14 +341,12 @@ export class SceneManager {
             // P5Manager.update(audio, midiRaw.ccs) としていたが、統一する
         }
 
-        // Camera Logic
-        // Reverted to simple Z-axis zoom
-        const zoomParam = midi.cc8 !== undefined ? midi.cc8 : midi.cc3;
-        const camZ = 5 + zoomParam * 35; // Range 5-40
-
-        this.camera.position.x = 0;
-        this.camera.position.z = camZ;
-        this.camera.lookAt(0, 0, 0);
+        // Zoom control disabled per user request
+        if (this.currentMode === 'Photo') {
+            this.camera.position.z = 8; // Closer for Photo mode to enhance impact
+        } else {
+            this.camera.position.z = 20; // Fixed Z for 3D Swarm
+        }
 
         if (this.currentMode === '2D') {
             this.p5Manager.update(audio, midi);
@@ -354,6 +356,14 @@ export class SceneManager {
         // Update active Three.js content
         if (this.currentMode === 'Photo') {
             this.photoPolygonizer.update(audio, midi);
+        } else if (this.currentMode === 'HoloBlob') {
+            this.blobSwarmMode.update(audio);
+            // Bloom Control?
+            if (this.blobSwarmMode.currentPreset.post.bloom) {
+                this.commonEffects.bloomStrength = this.blobSwarmMode.currentPreset.post.bloomStrength;
+            } else {
+                this.commonEffects.bloomStrength = 0;
+            }
         } else if (this.currentMode === '3D') {
             // Check Spawn
             if (this.particleSpawner.isActive) {
@@ -447,21 +457,10 @@ export class SceneManager {
             // Nothing to update for scene objects as they are hidden
         }
 
-        // Update Video Manager
-        if (this.currentMode === 'Video') {
-            this.videoManager.update(performance.now(), midi);
-        }
-
         // v1.3: VisualEffectManagerでシーンを描画し、その結果をCommonEffectsに渡す
         // これにより Mode 1, 2, 4 すべてで共通パイプラインを通る
         const sourceTexture = this.effects.render(audio, midi);
         this.commonEffects.render(audio, midi, sourceTexture);
-    }
-
-    onNoteOn(note, velocity) {
-        if (this.currentMode === 'Video') {
-            this.videoManager.triggerNote(note);
-        }
     }
 
     onResize() {
@@ -473,4 +472,3 @@ export class SceneManager {
         // P5 handles resize internally via windowResized
     }
 }
-
