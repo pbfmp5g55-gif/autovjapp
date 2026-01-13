@@ -31,8 +31,12 @@ void main() {
     float time = uTime;
     
     // 1. Horizontal Jitter (Glitch)
-    // Triggered by Onset or constant Jitter param
-    float jitterStrength = uHorizontalJitter * 0.05 + (uOnset * 0.05 * uHorizontalJitter); // Dynamic jitter
+    // Triggered by Onset or constant Jitter param -- Boosted
+    
+    // Dynamic curve for onset (make it pop)
+    float onsetFactor = uOnset * uOnset; 
+    float jitterStrength = uHorizontalJitter * 0.05 + (onsetFactor * 0.3 * (0.5 + uHorizontalJitter)); 
+
     if (jitterStrength > 0.0) {
         // Simple wave offset
         float jitter = sin(uv.y * 50.0 + time * 20.0) * jitterStrength;
@@ -42,8 +46,8 @@ void main() {
     }
 
     // 2. Grain / Noise Generation
-    // Dynamic Grain Size: Base + Audio Low
-    float currentGrain = max(0.5, uGrainSize + uLow * 2.0);
+    // Dynamic Grain Size: Base + Audio Low (Massive boost on bass)
+    float currentGrain = max(0.5, uGrainSize + uLow * 8.0);
     vec2 seed = floor(uv * uResolution / currentGrain);
     
     // Time variation for flicker
@@ -53,10 +57,9 @@ void main() {
 
     // 3. Contrast & Amount
     // Audio Volume affects Amount (density) or visibility?
-    // Spec: Audio missing -> keep Amount (Silent Idle). With Audio -> Increase.
-    // Let's mix Base Amount with Audio Volume
-    float activeAmount = clamp(uAmount + uVol * 0.5, 0.0, 1.0);
-    float activeContrast = clamp(uContrast + uVol * 0.5, 0.0, 2.0);
+    // Boost Volume impact
+    float activeAmount = clamp(uAmount + uVol * 1.5, 0.0, 1.5);
+    float activeContrast = clamp(uContrast + uVol * 1.0, 0.0, 3.0);
     
     // Apply contrast: (val - 0.5) * contrast + 0.5
     noise = (noise - 0.5) * activeContrast + 0.5;

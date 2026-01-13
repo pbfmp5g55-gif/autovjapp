@@ -83,11 +83,17 @@ export class TVStaticMode {
         const u = this.material.uniforms;
         u.uTime.value = performance.now() * 0.001;
 
-        // Audio Update
-        u.uVol.value = audio.rms;
-        u.uLow.value = audio.low;
-        u.uHigh.value = audio.high;
-        u.uOnset.value = (audio.beat > 0.6) ? 1.0 : (u.uOnset.value * 0.85); // Decay
+        // Audio Update - Boosted for visibility
+        u.uVol.value = audio.rms * 3.0; // Significant boost
+        u.uLow.value = audio.low * 2.5;
+        u.uHigh.value = audio.high * 2.5;
+
+        // More sensitive onset
+        if (audio.beat > 0.4) {
+            u.uOnset.value = 1.0;
+        } else {
+            u.uOnset.value *= 0.85; // Decay
+        }
     }
 
     setVisible(v) {
