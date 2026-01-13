@@ -6,9 +6,7 @@ import { P5Manager } from './P5Manager';
 import { AudioReactiveParticles } from './AudioReactiveParticles';
 import { CommonEffects } from './CommonEffects'; // v1.3
 import { BlobSwarmMode } from '../modes/BlobSwarmMode'; // New Mode
-
-
-
+import { VideoManager } from './VideoManager'; // Video Mode
 
 export class SceneManager {
     constructor() {
@@ -53,6 +51,7 @@ export class SceneManager {
         this.photoPolygonizer = new PhotoPolygonizer(this.scene);
         this.particleSpawner = new AudioReactiveParticles(this.scene);
         this.blobSwarmMode = new BlobSwarmMode(this.scene, this.camera, this.renderer);
+        this.videoManager = new VideoManager(this.scene); // Video Mode
 
         // New Mode
 
@@ -69,21 +68,6 @@ export class SceneManager {
     }
 
     init() {
-        // THREE setup
-        // this.renderer.setSize(window.innerWidth, window.innerHeight); // Moved to constructor
-        // this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Moved to constructor
-        // document.body.appendChild(this.renderer.domElement); // Moved to constructor
-        // this.renderer.domElement.id = 'three-canvas'; // Moved to constructor
-
-        // this.camera.position.z = 10; // Moved to constructor
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        this.scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xffffff, 1);
-        pointLight.position.set(5, 5, 10);
-        this.scene.add(pointLight);
-
         // P5 setup
         this.p5Manager.init();
 
@@ -115,6 +99,7 @@ export class SceneManager {
             this.photoPolygonizer.group.visible = false;
             if (this.particleSpawner) this.particleSpawner.setVisible(false);
             this.blobSwarmMode.setVisible(false);
+            this.videoManager.setVisible(false);
 
             if (this.currentMode === 'Photo') {
                 this.photoPolygonizer.group.visible = true;
@@ -125,6 +110,9 @@ export class SceneManager {
                 this.effects.setVMode('Noise');
             } else if (this.currentMode === 'HoloBlob') {
                 this.blobSwarmMode.setVisible(true);
+                this.effects.setVMode('3D');
+            } else if (this.currentMode === 'Video') {
+                this.videoManager.setVisible(true);
                 this.effects.setVMode('3D');
             } else { // 3D Standard
 
@@ -322,6 +310,14 @@ export class SceneManager {
         }
     }
 
+    onNoteOn(note, vel) {
+        // Dispatch MIDI events to active manager
+        if (this.videoManager) {
+            this.videoManager.triggerNote(note);
+        }
+        // Future: Pass to other modes if they have MIDI Note logic
+    }
+
 
 
 
@@ -364,6 +360,8 @@ export class SceneManager {
             } else {
                 this.commonEffects.bloomStrength = 0;
             }
+        } else if (this.currentMode === 'Video') {
+            this.videoManager.update(performance.now(), midi);
         } else if (this.currentMode === '3D') {
             // Check Spawn
             if (this.particleSpawner.isActive) {
