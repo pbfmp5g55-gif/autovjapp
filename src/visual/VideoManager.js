@@ -20,7 +20,7 @@ export class VideoManager {
         this.isTransitioning = false;
         this.transitionStartTime = 0;
         this.transitionDuration = 500; // ms
-        this.transitionType = 'CUT'; // 'CUT', 'FADE'
+        this.transitionType = 'FADE'; // 'CUT', 'FADE'
 
         // Global Params
         this.playbackSpeed = 1.0;
@@ -320,24 +320,6 @@ export class VideoManager {
         // CC8: Strobe/Pixelate (Combined?) or just Pixelate for now
         if (midi.cc8 !== undefined) this.material.uniforms.pixelate.value = (midi.cc8 > 0.05) ? midi.cc8 : 0.0;
 
-        // CC7: Playback Speed
-        if (midi.cc7 !== undefined) {
-            // 0.25 to 2.0
-            let speed = 0.25 + midi.cc7 * 1.75;
-            if (Math.abs(speed - 1.0) < 0.1) speed = 1.0; // Snap to 1
-            this.playbackSpeed = speed;
-
-            // Apply to active elements
-            this.videos.forEach(v => {
-                if (!v.element.paused) v.element.playbackRate = speed;
-            });
-        }
-
-        // CC8: Loop
-        if (midi.cc8 !== undefined) {
-            this.loopEnabled = midi.cc8 > 0.5;
-            this.videos.forEach(v => v.element.loop = this.loopEnabled);
-        }
 
         // CC9: Transition Time
         if (midi.cc9 !== undefined) {
