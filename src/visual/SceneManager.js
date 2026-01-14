@@ -344,7 +344,12 @@ export class SceneManager {
             this.commonEffects.setFlashEnabled(enabled);
             console.log("Kick Flash:", enabled);
         }
+        // Also update Video Mode flash
+        if (this.videoManager) {
+            this.videoManager.setFlashEnabled(enabled);
+        }
     }
+
 
 
 
