@@ -21,7 +21,10 @@ export class CommonEffects {
         this.glowAmount = 0.5;        // CC6
         this.grainAmount = 0.1;       // CC13
         this.beatSensitivity = 0.5;   // CC14
+        this.beatSensitivity = 0.5;   // CC14
         this.backgroundFade = 0.5;    // CC15
+        this.isFlashEnabled = true;   // Kick Flash Toggle
+
 
         // レンダーターゲット（Trails用）
         this.trailsTarget = new THREE.WebGLRenderTarget(
@@ -280,8 +283,24 @@ export class CommonEffects {
         this.grainMaterial.uniforms.uGrainAmount.value = this.grainAmount;
     }
 
+
+    setFlashEnabled(enabled) {
+        this.isFlashEnabled = enabled;
+        if (!enabled) {
+            this.beatFlashDecay = 0;
+            this.beatFlashMaterial.uniforms.uFlashAmount.value = 0;
+        }
+    }
+
     // Beat検出とFlash
     detectBeat(audio) {
+        // Flash Disabled check
+        if (!this.isFlashEnabled) {
+            this.beatFlashDecay = 0;
+            this.beatFlashMaterial.uniforms.uFlashAmount.value = 0;
+            return;
+        }
+
         const beatThreshold = 0.7 + (1.0 - this.beatSensitivity) * 0.2;
         if (audio.beat > beatThreshold) {
             const now = performance.now();

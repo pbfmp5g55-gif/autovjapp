@@ -336,7 +336,16 @@ export class SceneManager {
             this.videoManager.triggerNote(note);
         }
         // Future: Pass to other modes if they have MIDI Note logic
+        // Future: Pass to other modes if they have MIDI Note logic
     }
+
+    setFlashEnabled(enabled) {
+        if (this.commonEffects) {
+            this.commonEffects.setFlashEnabled(enabled);
+            console.log("Kick Flash:", enabled);
+        }
+    }
+
 
 
 

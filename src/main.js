@@ -155,6 +155,10 @@ class App {
         <div class="control-row" style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.2); padding-top:10px;">
             <label><input type="checkbox" id="autoPilotCheck"> Auto Pilot</label>
         </div>
+        <div class="control-row">
+            <label><input type="checkbox" id="kickFlashCheck" checked> Kick Flash</label>
+        </div>
+
 
         <!-- Input Selector -->
          <div style="width:100%; text-align:left; font-size:0.8rem; color:#aaa; margin-top:10px;">Audio Input:</div>
@@ -192,8 +196,14 @@ class App {
 
     document.getElementById('autoPilotCheck').addEventListener('change', (e) => {
       this.midi.toggleAutoPilot(e.target.checked);
+      this.midi.toggleAutoPilot(e.target.checked);
       if (e.target.checked) this.lastAutoSwitch = performance.now() * 0.001;
     });
+
+    document.getElementById('kickFlashCheck').addEventListener('change', (e) => {
+      this.scene.setFlashEnabled(e.target.checked);
+    });
+
 
     // Input Selector Logic
     const micBtn = document.getElementById('inputMic');
