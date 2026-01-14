@@ -248,6 +248,22 @@ class App {
     });
 
     // MIDI Input List update callback
+    this.midi.onInputListChange = (inputs) => {
+      const select = document.getElementById('midiInputSelect');
+      if (select) {
+        select.innerHTML = '<option value="all">All Inputs</option>';
+        inputs.forEach(i => {
+          const opt = document.createElement('option');
+          opt.value = i.id;
+          opt.innerText = i.name;
+          select.appendChild(opt);
+        });
+      }
+    };
+
+    // Setup Tap Overlay for Video Mode
+    this.setupTapOverlay();
+
     this.midi.onInputListChanged = (inputs) => {
       const select = document.getElementById('midiInputSelect');
       select.innerHTML = '<option value="all">All Inputs</option>';
@@ -816,6 +832,63 @@ class App {
     if (monitor) {
       monitor.innerText = `CC1:${m.cc1.toFixed(2)} CC2:${m.cc2.toFixed(2)} CC3:${m.cc3.toFixed(2)} CC4:${m.cc4.toFixed(2)} | CC5:${m.cc5.toFixed(2)} CC6:${m.cc6.toFixed(2)} CC7:${m.cc7.toFixed(2)} CC8:${m.cc8.toFixed(2)}`;
     }
+  }
+
+  setupTapOverlay() {
+    // Create Overlay HTML
+    const overlay = document.createElement('div');
+    overlay.className = 'tap-overlay';
+    overlay.id = 'tapOverlay';
+    overlay.innerHTML = `
+        <div class="tap-content">
+            <h2>⚠️ Tap to Play</h2>
+            <p>Browser blocked autoplay.<br>Tap button to enable playback.</p>
+            <button id="forcePlayBtn">PLAY VIDEO</button>
+        </div>
+      `;
+    document.body.appendChild(overlay);
+
+    // Event Listener for the button
+    document.getElementById('forcePlayBtn').addEventListener('click', async () => {
+      const overlay = document.getElementById('tapOverlay');
+      if (this.pendingVideoElement) {
+        try {
+          await this.pendingVideoElement.play();
+          // Also resume AudioContext just in case
+          if (this.audio.context) await this.audio.context.resume();
+          overlay.style.display = 'none';
+          // Dispatch ready/success? VideoManager handles it via 'playing' event usually?
+          // But VideoManager checks .play() promise.
+          // Since we are re-triggering play here, we might need to notify VideoManager?
+          // VideoManager just set status to need_tap. 
+          // If we play it here, the video will start. 
+          // We should ideally update the status icon. 
+          if (this.pendingVideoId) {
+            const v = this.scene.videoManager.videos.find(i => i.id === this.pendingVideoId);
+            if (v) v.status = 'ready';
+            this.renderVideoList();
+          }
+        } catch (e) {
+          console.error("Still blocked:", e);
+          alert("Playback failed. Please interact with the page more.");
+        }
+      }
+      this.pendingVideoElement = null;
+      this.pendingVideoId = null;
+      overlay.style.display = 'none';
+    });
+
+    // Global Event Listener from VideoManager
+    window.addEventListener('video-tap-needed', (e) => {
+      this.showTapOverlay(e.detail);
+    });
+  }
+
+  showTapOverlay(detail) {
+    this.pendingVideoElement = detail.element;
+    this.pendingVideoId = detail.videoId;
+    const overlay = document.getElementById('tapOverlay');
+    if (overlay) overlay.style.display = 'flex';
   }
 }
 
