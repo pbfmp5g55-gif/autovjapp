@@ -393,7 +393,7 @@ export class SceneManager {
         } else if (this.currentMode === 'TVStatic') {
             this.tvStaticMode.update(audio);
         } else if (this.currentMode === 'Video') {
-            this.videoManager.update(performance.now(), midi);
+            this.videoManager.update(performance.now(), midi, audio);
         } else if (this.currentMode === '3D') {
             // Check Spawn
             if (this.particleSpawner.isActive) {

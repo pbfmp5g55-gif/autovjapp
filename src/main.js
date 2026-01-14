@@ -153,11 +153,15 @@ class App {
         </div>
 
         <div class="control-row" style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.2); padding-top:10px;">
-            <label><input type="checkbox" id="autoPilotCheck"> Auto Pilot</label>
+            <label><input type="checkbox" id="autoPilotCheck"> Global CC Auto (LFO)</label>
+        </div>
+        <div class="control-row">
+            <label><input type="checkbox" id="videoAutoCheck"> Video Auto Switch</label>
         </div>
         <div class="control-row">
             <label><input type="checkbox" id="kickFlashCheck" checked> Kick Flash</label>
         </div>
+
 
 
         <!-- Input Selector -->
@@ -196,9 +200,16 @@ class App {
 
     document.getElementById('autoPilotCheck').addEventListener('change', (e) => {
       this.midi.toggleAutoPilot(e.target.checked);
-      this.midi.toggleAutoPilot(e.target.checked);
       if (e.target.checked) this.lastAutoSwitch = performance.now() * 0.001;
     });
+
+    document.getElementById('videoAutoCheck').addEventListener('change', (e) => {
+      // Direct call to VideoManager via SceneManager access
+      if (this.scene.videoManager) {
+        this.scene.videoManager.setAutoPilot(e.target.checked);
+      }
+    });
+
 
     document.getElementById('kickFlashCheck').addEventListener('change', (e) => {
       this.scene.setFlashEnabled(e.target.checked);

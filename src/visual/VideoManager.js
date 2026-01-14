@@ -27,12 +27,17 @@ export class VideoManager {
         this.loopEnabled = true;
 
         // Auto Pilot
-        this.autoPilot = false;
-        this.autoPilotInterval = 2000;
+        this.autoPilot = false; // Video Auto Switch State
         this.lastAutoTrigger = 0;
+        this.autoPilotInterval = 2000; // 2sec default
         this.avoidRepeat = true;
 
         this.initVisuals();
+    }
+
+    setAutoPilot(enable) {
+        this.autoPilot = enable;
+        console.log("Video Auto Switch:", enable);
     }
 
     initVisuals() {
@@ -321,17 +326,7 @@ export class VideoManager {
         if (midi.cc8 !== undefined) this.material.uniforms.pixelate.value = (midi.cc8 > 0.05) ? midi.cc8 : 0.0;
 
 
-        // CC9: Transition Time
-        if (midi.cc9 !== undefined) {
-            this.transitionDuration = 100 + midi.cc9 * 2000; // 100ms - 2100ms
-        }
-
-        // CC10: Transition Type
-        if (midi.cc10 !== undefined) {
-            this.transitionType = (midi.cc10 > 0.5) ? 'FADE' : 'CUT';
-        }
-
-        // 3. Auto Pilot
+        // 3. Auto Pilot (Video Switch)
         if (this.autoPilot) {
             const now = performance.now();
             if (now - this.lastAutoTrigger > this.autoPilotInterval) {
@@ -339,6 +334,42 @@ export class VideoManager {
                 this.lastAutoTrigger = now;
             }
         }
+    }
+
+    update(time, midi, audio) {
+        if (!this.mesh.visible) return;
+
+        // --- Audio Reactivity (User Request: "派手に") ---
+        if (audio) {
+            // Beat Flash -> Invert Spike
+            if (audio.beat > 0.7) {
+                // Short invert flash
+                this.material.uniforms.invert.value = 1.0;
+                setTimeout(() => { if (this.material) this.material.uniforms.invert.value = 0.0; }, 50);
+            }
+
+            // Low/Bass -> Distortion
+            // Map audio.low (0-1) to Distort
+            // Add to existing CC3 control (Combine)
+            const ccDistort = this.material.uniforms.distort.value;
+            // Dynamic distort on bass
+            if (audio.low > 0.4) {
+                this.material.uniforms.distort.value = Math.max(ccDistort, audio.low * 0.5);
+            } else {
+                if (midi.cc3 === undefined || midi.cc3 < 0.1) {
+                    this.material.uniforms.distort.value = 0.0; // Reset if no CC and no bass
+                }
+            }
+
+            // High -> Hue Jitter
+            if (audio.high > 0.6) {
+                this.material.uniforms.hueShift.value += 0.1;
+            }
+        }
+
+        // --- MIDI CC Control ---
+        // CC1: Manual Crossfader
+
     }
 
     triggerRandom() {
