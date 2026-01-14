@@ -267,8 +267,10 @@ export class VideoManager {
         }
     }
 
-    update(time, midi) {
-        // 1. Transition
+    update(time, midi, audio) {
+        if (!this.mesh.visible) return;
+
+        // 1. Transition Logic
         if (this.isTransitioning) {
             const now = performance.now();
             const progress = (now - this.transitionStartTime) / this.transitionDuration;
@@ -285,35 +287,26 @@ export class VideoManager {
                 }
             }
         }
-
         this.material.uniforms.mixVal.value = this.mixValue;
 
-        // 2. MIDI CC Application (Video Mode Specific)
+        // 2. MIDI CC Application (Base Values)
 
-        // CC1: Mix (Crossfader) - Override
-        // If CC1 is touched, we might want to manually crossfade?
-        // But transition system uses mixVal internally. 
-        // Let's map CC1 to MANUAL MIX override if not transitioning?
-        // Or mapping CC1 to something else? 
-        // User said: "Video dedicated CC". 
-        // Let's use CC1 for Invert?? No, CC1 usually Mod Wheel.
-        // Let's follow plan:
-        // CC1: Mix (Crossfader)
-        if (midi.cc1 !== undefined) {
-            // If not transitioning, allow manual mix
-            if (!this.isTransitioning) this.mixValue = midi.cc1;
+        // CC1: Manual Crossfader (Override if not transitioning)
+        if (midi.cc1 !== undefined && !this.isTransitioning) {
+            this.mixValue = midi.cc1;
+            this.material.uniforms.mixVal.value = this.mixValue;
         }
 
-        // CC2: Glow/Contrast (Aggressive)
+        // CC2: Contrast
         if (midi.cc2 !== undefined) this.material.uniforms.contrast.value = 0.5 + midi.cc2 * 3.0;
 
-        // CC3: Distort (Bend)
+        // CC3: Distort
         if (midi.cc3 !== undefined) this.material.uniforms.distort.value = midi.cc3 * 2.0;
 
-        // CC4: Color Shift (Hue)
+        // CC4: Hue Shift
         if (midi.cc4 !== undefined) this.material.uniforms.hueShift.value = midi.cc4;
 
-        // CC5: Invert (Toggle/Slider)
+        // CC5: Invert
         if (midi.cc5 !== undefined) this.material.uniforms.invert.value = (midi.cc5 > 0.5) ? 1.0 : 0.0;
 
         // CC6: Monochrome
@@ -321,19 +314,41 @@ export class VideoManager {
 
         // CC7: Speed
         if (midi.cc7 !== undefined) {
-            let speed = 0.25 + midi.cc7 * 3.75; // 0.25x to 4x
+            let speed = 0.25 + midi.cc7 * 3.75;
             if (Math.abs(speed - 1.0) < 0.1) speed = 1.0;
-            this.playbackSpeed = speed;
-            this.videos.forEach(v => {
-                if (!v.element.paused) v.element.playbackRate = speed;
-            });
+            if (Math.abs(this.playbackSpeed - speed) > 0.01) {
+                this.playbackSpeed = speed;
+                this.videos.forEach(v => {
+                    if (!v.element.paused) v.element.playbackRate = speed;
+                });
+            }
         }
 
-        // CC8: Strobe/Pixelate (Combined?) or just Pixelate for now
+        // CC8: Pixelate
         if (midi.cc8 !== undefined) this.material.uniforms.pixelate.value = (midi.cc8 > 0.05) ? midi.cc8 : 0.0;
 
 
-        // 3. Auto Pilot (Video Switch)
+        // 3. Audio Reactivity (Add/Override)
+        if (audio) {
+            // Beat Flash -> Invert Spike (Global Toggle)
+            if (this.kickFlashEnabled && audio.beat > 0.7) {
+                this.material.uniforms.invert.value = 1.0;
+                setTimeout(() => { if (this.material) this.material.uniforms.invert.value = 0.0; }, 50);
+            }
+
+            // Low/Bass -> Distortion (Enhance existing)
+            if (audio.low > 0.4) {
+                const currentDistort = this.material.uniforms.distort.value;
+                this.material.uniforms.distort.value = Math.max(currentDistort, audio.low * 0.5);
+            }
+
+            // High -> Hue Jitter (Enhance existing)
+            if (audio.high > 0.6) {
+                this.material.uniforms.hueShift.value += 0.05; // Subtle jitter
+            }
+        }
+
+        // 4. Video Auto Switch (Random Trigger)
         if (this.autoPilot) {
             const now = performance.now();
             if (now - this.lastAutoTrigger > this.autoPilotInterval) {
@@ -343,89 +358,49 @@ export class VideoManager {
         }
     }
 
-    update(time, midi, audio) {
-        if (!this.mesh.visible) return;
+    triggerRandom() {
+        // Find assigned videos
+        const assignedNotes = Object.keys(this.noteMapping);
+        if (assignedNotes.length === 0) return;
 
-        // --- Audio Reactivity (User Request: "派手に") ---
-        if (audio) {
-            // --- Audio Reactivity (User Request: "派手に") ---
-            if (audio) {
-                // Beat Flash -> Invert Spike
-                // Check global kickFlashEnabled state
-                if (this.kickFlashEnabled && audio.beat > 0.7) {
-                    // Short invert flash
-                    this.material.uniforms.invert.value = 1.0;
-                    setTimeout(() => { if (this.material) this.material.uniforms.invert.value = 0.0; }, 50);
-                }
+        const note = assignedNotes[Math.floor(Math.random() * assignedNotes.length)];
+        this.triggerNote(parseInt(note));
 
+        // Randomize Effects for VJ feel
+        if (Math.random() > 0.6) { // Reduced freq from 0.5 to 0.4 (invert logic > 0.6)
+            // Random glitch
+            // Invert: Rare & short
+            this.material.uniforms.invert.value = (Math.random() > 0.9) ? 1.0 : 0.0;
 
-                // Low/Bass -> Distortion
-                // Map audio.low (0-1) to Distort
-                // Add to existing CC3 control (Combine)
-                const ccDistort = this.material.uniforms.distort.value;
-                // Dynamic distort on bass
-                if (audio.low > 0.4) {
-                    this.material.uniforms.distort.value = Math.max(ccDistort, audio.low * 0.5);
-                } else {
-                    if (midi.cc3 === undefined || midi.cc3 < 0.1) {
-                        this.material.uniforms.distort.value = 0.0; // Reset if no CC and no bass
-                    }
-                }
+            // Distort: Milder range (0.0 - 0.5 instead of full)
+            this.material.uniforms.distort.value = (Math.random() > 0.7) ? Math.random() * 0.5 : 0.0;
 
-                // High -> Hue Jitter
-                if (audio.high > 0.6) {
-                    this.material.uniforms.hueShift.value += 0.1;
-                }
-            }
+            // Mono: Occasional
+            this.material.uniforms.mono.value = (Math.random() > 0.8) ? 1.0 : 0.0;
 
-            // --- MIDI CC Control ---
-            // CC1: Manual Crossfader
-
-        }
-
-        triggerRandom() {
-            // Find assigned videos
-            const assignedNotes = Object.keys(this.noteMapping);
-            if (assignedNotes.length === 0) return;
-
-            const note = assignedNotes[Math.floor(Math.random() * assignedNotes.length)];
-            this.triggerNote(parseInt(note));
-
-            // Randomize Effects for VJ feel
-            if (Math.random() > 0.6) { // Reduced freq from 0.5 to 0.4 (invert logic > 0.6)
-                // Random glitch
-                // Invert: Rare & short
-                this.material.uniforms.invert.value = (Math.random() > 0.9) ? 1.0 : 0.0;
-
-                // Distort: Milder range (0.0 - 0.5 instead of full)
-                this.material.uniforms.distort.value = (Math.random() > 0.7) ? Math.random() * 0.5 : 0.0;
-
-                // Mono: Occasional
-                this.material.uniforms.mono.value = (Math.random() > 0.8) ? 1.0 : 0.0;
-
-                // Hue: Subtle shift
-                this.material.uniforms.hueShift.value = (Math.random() > 0.8) ? Math.random() : 0.0;
+            // Hue: Subtle shift
+            this.material.uniforms.hueShift.value = (Math.random() > 0.8) ? Math.random() : 0.0;
 
 
-                // Reset heavily distorted values quickly? 
-                // Logic in update() overwrites via MIDI CC, but AutoPilot simulates MIDI?
-                // No, AutoPilot usually triggers notes.
-                // We need a way to override CCs or have "virtual CCs" driven by AutoPilot.
-                // For now, setting uniforms directly works until next MIDI CC update frame overwrites it.
-                // If no MIDI connected, this works great.
-            } else {
-                // Reset to clean sometimes
-                this.material.uniforms.invert.value = 0.0;
-                this.material.uniforms.distort.value = 0.0;
-                this.material.uniforms.mono.value = 0.0;
-            }
-        }
-
-        setVisible(v) {
-            this.mesh.visible = v;
-        }
-
-        getVideoList() {
-            return this.videos;
+            // Reset heavily distorted values quickly? 
+            // Logic in update() overwrites via MIDI CC, but AutoPilot simulates MIDI?
+            // No, AutoPilot usually triggers notes.
+            // We need a way to override CCs or have "virtual CCs" driven by AutoPilot.
+            // For now, setting uniforms directly works until next MIDI CC update frame overwrites it.
+            // If no MIDI connected, this works great.
+        } else {
+            // Reset to clean sometimes
+            this.material.uniforms.invert.value = 0.0;
+            this.material.uniforms.distort.value = 0.0;
+            this.material.uniforms.mono.value = 0.0;
         }
     }
+
+    setVisible(v) {
+        this.mesh.visible = v;
+    }
+
+    getVideoList() {
+        return this.videos;
+    }
+}
