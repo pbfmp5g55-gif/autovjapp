@@ -8,8 +8,15 @@ uniform float contrast;
 uniform float saturation;
 uniform float hueShift;
 uniform float pixelate;
+uniform float invert;
+uniform float distort;
+uniform float mono;
 
 varying vec2 vUv;
+
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
 
 // Utils
 vec3 rgb2hsv(vec3 c) {
@@ -37,6 +44,12 @@ vec3 blendOverlay(vec3 base, vec3 blend) {
 
 void main() {
     vec2 uv = vUv;
+
+    // Distort (UV shifting)
+    if (distort > 0.0) {
+        float n = rand(vec2(uv.y, distort)); // simple noise based on Y
+        uv.x += (n - 0.5) * distort * 0.1;
+    }
 
     // Pixelate
     if (pixelate > 0.0) {
@@ -153,6 +166,17 @@ void main() {
     }
 
     // Effects
+    // Invert
+    if (invert > 0.5) {
+        color.rgb = 1.0 - color.rgb;
+    }
+
+    // Monochrome
+    if (mono > 0.0) {
+        float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+        color.rgb = mix(color.rgb, vec3(gray), mono);
+    }
+
     // Brightness
     color.rgb *= brightness;
 

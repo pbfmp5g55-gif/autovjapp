@@ -54,6 +54,9 @@ export class VideoManager {
                 saturation: { value: 1.0 },
                 hueShift: { value: 0.0 },
                 pixelate: { value: 0.0 },
+                invert: { value: 0.0 },
+                distort: { value: 0.0 },
+                mono: { value: 0.0 },
                 resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
             },
             vertexShader: videoDeckVert,
@@ -115,6 +118,15 @@ export class VideoManager {
             };
 
             this.videos.push(vObj);
+
+            // Auto Assign: Find first empty slot starting from 36
+            for (let n = 36; n < 127; n++) {
+                if (!this.noteMapping[n]) {
+                    this.assignNote(id, n);
+                    break;
+                }
+            }
+
             if (onProgress) onProgress(id, 'added');
         });
     }
@@ -265,26 +277,48 @@ export class VideoManager {
         this.material.uniforms.mixVal.value = this.mixValue;
 
         // 2. MIDI CC Application (Video Mode Specific)
-        // CC1: Brightness - Clamp 0.2 to 2.0 (Avoid pure black)
-        if (midi.cc1 !== undefined) this.material.uniforms.brightness.value = 0.2 + midi.cc1 * 1.8;
 
-        // CC2: Contrast - Clamp 0.5 to 2.5
-        if (midi.cc2 !== undefined) this.material.uniforms.contrast.value = 0.5 + midi.cc2 * 2.0;
-
-        // CC3: Saturation - Clamp 0.0 to 2.0
-        if (midi.cc3 !== undefined) this.material.uniforms.saturation.value = midi.cc3 * 2.0;
-
-        // CC4: Hue
-        if (midi.cc4 !== undefined) this.material.uniforms.hueShift.value = midi.cc4;
-
-        // CC5: Blend Mode
-        if (midi.cc5 !== undefined) {
-            const mode = Math.floor(midi.cc5 * 4.9); // 0-4
-            this.material.uniforms.blendMode.value = mode;
+        // CC1: Mix (Crossfader) - Override
+        // If CC1 is touched, we might want to manually crossfade?
+        // But transition system uses mixVal internally. 
+        // Let's map CC1 to MANUAL MIX override if not transitioning?
+        // Or mapping CC1 to something else? 
+        // User said: "Video dedicated CC". 
+        // Let's use CC1 for Invert?? No, CC1 usually Mod Wheel.
+        // Let's follow plan:
+        // CC1: Mix (Crossfader)
+        if (midi.cc1 !== undefined) {
+            // If not transitioning, allow manual mix
+            if (!this.isTransitioning) this.mixValue = midi.cc1;
         }
 
-        // CC6: Pixelate
-        if (midi.cc6 !== undefined) this.material.uniforms.pixelate.value = (midi.cc6 > 0.05) ? midi.cc6 : 0.0;
+        // CC2: Glow/Contrast (Aggressive)
+        if (midi.cc2 !== undefined) this.material.uniforms.contrast.value = 0.5 + midi.cc2 * 3.0;
+
+        // CC3: Distort (Bend)
+        if (midi.cc3 !== undefined) this.material.uniforms.distort.value = midi.cc3 * 2.0;
+
+        // CC4: Color Shift (Hue)
+        if (midi.cc4 !== undefined) this.material.uniforms.hueShift.value = midi.cc4;
+
+        // CC5: Invert (Toggle/Slider)
+        if (midi.cc5 !== undefined) this.material.uniforms.invert.value = (midi.cc5 > 0.5) ? 1.0 : 0.0;
+
+        // CC6: Monochrome
+        if (midi.cc6 !== undefined) this.material.uniforms.mono.value = midi.cc6;
+
+        // CC7: Speed
+        if (midi.cc7 !== undefined) {
+            let speed = 0.25 + midi.cc7 * 3.75; // 0.25x to 4x
+            if (Math.abs(speed - 1.0) < 0.1) speed = 1.0;
+            this.playbackSpeed = speed;
+            this.videos.forEach(v => {
+                if (!v.element.paused) v.element.playbackRate = speed;
+            });
+        }
+
+        // CC8: Strobe/Pixelate (Combined?) or just Pixelate for now
+        if (midi.cc8 !== undefined) this.material.uniforms.pixelate.value = (midi.cc8 > 0.05) ? midi.cc8 : 0.0;
 
         // CC7: Playback Speed
         if (midi.cc7 !== undefined) {
@@ -330,15 +364,29 @@ export class VideoManager {
         const assignedNotes = Object.keys(this.noteMapping);
         if (assignedNotes.length === 0) return;
 
-        // Filter out current playing if avoidRepeat
-        let candidates = assignedNotes;
-        if (this.avoidRepeat && assignedNotes.length > 1) {
-            // Determine current note? We don't track Current Note explicitly, just deck.
-            // But we can guess.
-        }
-
-        const note = candidates[Math.floor(Math.random() * candidates.length)];
+        const note = assignedNotes[Math.floor(Math.random() * assignedNotes.length)];
         this.triggerNote(parseInt(note));
+
+        // Randomize Effects for VJ feel
+        if (Math.random() > 0.5) {
+            // Random glitch
+            this.material.uniforms.invert.value = (Math.random() > 0.8) ? 1.0 : 0.0;
+            this.material.uniforms.distort.value = (Math.random() > 0.7) ? Math.random() : 0.0;
+            this.material.uniforms.mono.value = (Math.random() > 0.7) ? 1.0 : 0.0;
+            this.material.uniforms.hueShift.value = (Math.random() > 0.8) ? Math.random() : 0.0;
+
+            // Reset heavily distorted values quickly? 
+            // Logic in update() overwrites via MIDI CC, but AutoPilot simulates MIDI?
+            // No, AutoPilot usually triggers notes.
+            // We need a way to override CCs or have "virtual CCs" driven by AutoPilot.
+            // For now, setting uniforms directly works until next MIDI CC update frame overwrites it.
+            // If no MIDI connected, this works great.
+        } else {
+            // Reset to clean sometimes
+            this.material.uniforms.invert.value = 0.0;
+            this.material.uniforms.distort.value = 0.0;
+            this.material.uniforms.mono.value = 0.0;
+        }
     }
 
     setVisible(v) {
