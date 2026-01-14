@@ -350,12 +350,20 @@ export class VideoManager {
         this.triggerNote(parseInt(note));
 
         // Randomize Effects for VJ feel
-        if (Math.random() > 0.5) {
+        if (Math.random() > 0.6) { // Reduced freq from 0.5 to 0.4 (invert logic > 0.6)
             // Random glitch
-            this.material.uniforms.invert.value = (Math.random() > 0.8) ? 1.0 : 0.0;
-            this.material.uniforms.distort.value = (Math.random() > 0.7) ? Math.random() : 0.0;
-            this.material.uniforms.mono.value = (Math.random() > 0.7) ? 1.0 : 0.0;
+            // Invert: Rare & short
+            this.material.uniforms.invert.value = (Math.random() > 0.9) ? 1.0 : 0.0;
+
+            // Distort: Milder range (0.0 - 0.5 instead of full)
+            this.material.uniforms.distort.value = (Math.random() > 0.7) ? Math.random() * 0.5 : 0.0;
+
+            // Mono: Occasional
+            this.material.uniforms.mono.value = (Math.random() > 0.8) ? 1.0 : 0.0;
+
+            // Hue: Subtle shift
             this.material.uniforms.hueShift.value = (Math.random() > 0.8) ? Math.random() : 0.0;
+
 
             // Reset heavily distorted values quickly? 
             // Logic in update() overwrites via MIDI CC, but AutoPilot simulates MIDI?

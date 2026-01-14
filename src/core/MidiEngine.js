@@ -255,14 +255,15 @@ export class MidiEngine {
         if (!this.isAutoPilot) return;
 
         // Auto Pilot: CC値を自動変化（MIDI入力がない場合のデモ用）
-        this.ccs.cc1 = (Math.sin(time * 0.5) * 0.5 + 0.5) * 0.8 + 0.2;
-        this.ccs.cc2 = (time * 0.1) % 1.0;
-        this.ccs.cc3 = Math.sin(time * 0.2) * 0.4 + 0.5;
-        this.ccs.cc4 = Math.max(0, Math.sin(time * 1.5) * Math.sin(time * 0.5));
-        this.ccs.cc5 = Math.sin(time * 0.3) * 0.5 + 0.5;
-        this.ccs.cc6 = Math.sin(time * 0.8) * 0.5 + 0.5;
-        this.ccs.cc7 = Math.sin(time * 0.4) * 0.5 + 0.5;
-        this.ccs.cc8 = Math.sin(time * 0.6) * 0.5 + 0.5;
+        // 範囲をマイルドに調整 (例: 0.2〜0.8) して真っ白/真っ黒を防ぐ
+        this.ccs.cc1 = (Math.sin(time * 0.5) * 0.5 + 0.5) * 0.6 + 0.2; // 0.2 - 0.8
+        this.ccs.cc2 = (time * 0.1) % 1.0; // Hueは全周OK
+        this.ccs.cc3 = Math.sin(time * 0.2) * 0.3 + 0.4; // 0.1 - 0.7
+        this.ccs.cc4 = Math.max(0, Math.sin(time * 1.5) * Math.sin(time * 0.5)) * 0.8; // Max 0.8
+        this.ccs.cc5 = Math.sin(time * 0.3) * 0.3 + 0.3; // 0.0 - 0.6
+        this.ccs.cc6 = Math.sin(time * 0.8) * 0.3 + 0.3; // Glow
+        this.ccs.cc7 = Math.sin(time * 0.4) * 0.3 + 0.5; // Contrast: 0.2 - 0.8
+        this.ccs.cc8 = Math.sin(time * 0.6) * 0.4 + 0.4; // Zoom
     }
 
     toggleAutoPilot(enable) {
