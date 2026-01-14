@@ -225,6 +225,16 @@ class App {
     const fileBtn = document.getElementById('inputFile');
     const audioInput = document.getElementById('audioInput');
 
+    // Mobile Detection
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Update Labels based on device
+    if (isMobile) {
+      systemBtn.innerHTML = '<span>📱 BGM</span>';
+    } else {
+      systemBtn.innerHTML = '<span>🖥️ Internal</span>';
+    }
+
     micBtn.addEventListener('click', () => {
       this.updateInputState('MIC');
       this.audio.enableMicrophone();
@@ -232,7 +242,13 @@ class App {
 
     systemBtn.addEventListener('click', () => {
       this.updateInputState('SYSTEM');
-      this.audio.enableSystemAudio();
+      if (isMobile) {
+        // On mobile, "System/BGM" mode falls back to Microphone 
+        // because true system loopback is not possible in browser
+        this.audio.enableMicrophone();
+      } else {
+        this.audio.enableSystemAudio();
+      }
     });
 
     fileBtn.addEventListener('click', () => {
