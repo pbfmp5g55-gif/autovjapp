@@ -43,6 +43,9 @@ class App {
                 <li><strong>Mode 2 (Photo):</strong> Upload image -> 2.5D Polygons.</li>
                 <li><strong>Mode 3 (2D):</strong> Generative p5.js visuals.</li>
                 <li><strong>Mode 4 (Shader):</strong> Noise, Glitch, Kaleidoscope FX.</li>
+                <li><strong>Mode 5 (Video):</strong> VJ Deck with A/B mixing & MIDI.</li>
+                <li><strong>Mode 6 (HoloBlob):</strong> Raymarching abstract forms.</li>
+                <li><strong>Mode 7 (TVStatic):</strong> Noise & Glitch textures.</li>
             </ul>
         </div>
         <button id="startBtn">START VJ</button>
