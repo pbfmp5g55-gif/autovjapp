@@ -319,3 +319,115 @@ select:hover {
   border-color: var(--color-accent);
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* Video List Items */
+.video-item {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 5px;
+  padding: 5px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.video-item.selected {
+  border-color: #0ff;
+  background: rgba(0, 255, 255, 0.1);
+}
+
+.v-thumb {
+  width: 60px;
+  height: 34px;
+  object-fit: cover;
+  margin-right: 8px;
+  background: #000;
+}
+
+.v-thumb-placeholder {
+  width: 60px;
+  height: 34px;
+  background: #333;
+  margin-right: 8px;
+}
+
+.v-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.v-info .name {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note-badge {
+  background: #ff00ff;
+  color: #fff;
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.remove-btn {
+  background: transparent;
+  border: none;
+  color: #f00;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 5px;
+}
+
+/* Tap Overlay */
+.tap-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  /* Flex when active */
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.tap-content {
+  background: #222;
+  border: 2px solid #ff00ff;
+  padding: 20px;
+  text-align: center;
+}
+
+.tap-content h2 {
+  color: #ff00ff;
+  margin-top: 0;
+}
+
+#forcePlayBtn {
+  background: #ff00ff;
+  color: white;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.spin {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}

@@ -264,6 +264,43 @@ class App {
     document.getElementById('midiChannelSelect').value = this.midi.selectedChannel;
 
     this.updateSubUI('3D');
+
+    // Video Tap Needed Event
+    window.addEventListener('video-tap-needed', (e) => {
+      this.showTapOverlay(e.detail);
+    });
+  }
+
+  showTapOverlay(detail) {
+    let overlay = document.getElementById('tapOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'tapOverlay';
+      overlay.className = 'tap-overlay';
+      overlay.innerHTML = `
+            <div class="tap-content">
+                <h2>TAP TO PLAY</h2>
+                <p>Playback blocked by browser</p>
+                <button id="forcePlayBtn">PLAY VIDEO</button>
+            </div>
+        `;
+      document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+
+    // One time listener
+    const btn = document.getElementById('forcePlayBtn');
+    const handler = async () => {
+      try {
+        await detail.element.play();
+        // Success
+        overlay.style.display = 'none';
+      } catch (err) {
+        console.error("Still failed", err);
+      }
+      btn.removeEventListener('click', handler);
+    };
+    btn.addEventListener('click', handler);
   }
 
   updateInputState(type) {
@@ -675,17 +712,23 @@ class App {
       if (this.selectedVideoId === v.id) div.classList.add('selected');
 
       let statusIcon = '';
-      if (v.status === 'loading') statusIcon = '⏳';
+      if (v.status === 'loading') statusIcon = '<span class="spin">⏳</span>';
       else if (v.status === 'error') statusIcon = '⚠️';
+      else if (v.status === 'need_tap') statusIcon = '👆';
 
       let noteBadge = '';
       if (v.assignedNote !== null) {
         noteBadge = `<span class="note-badge">Note ${v.assignedNote}</span>`;
       }
 
+      const thumbHTML = v.thumb ? `<img src="${v.thumb}" class="v-thumb">` : `<div class="v-thumb-placeholder"></div>`;
+
       div.innerHTML = `
-            <div class="info">${statusIcon} ${v.name}</div>
-            ${noteBadge}
+            ${thumbHTML}
+            <div class="v-info">
+                <div class="name">${statusIcon} ${v.name}</div>
+                ${noteBadge}
+            </div>
             <button class="remove-btn">×</button>
           `;
 
