@@ -2,6 +2,7 @@ import './style.css';
 import { SceneManager } from './visual/SceneManager';
 import { AudioEngine } from './core/AudioEngine';
 import { MidiEngine } from './core/MidiEngine';
+import { authManager } from './core/AuthManager';
 
 class App {
   constructor() {
@@ -19,8 +20,99 @@ class App {
     this.autoSwitchInterval = 10; // seconds
 
     this.setupUI();
+
+    // Auth Initialization
+    authManager.onStatusChange = (user, isPaid) => {
+      this.isPaid = isPaid;
+      this.updateAuthUI(user, isPaid);
+      this.refreshPaidVisuals();
+    };
+    authManager.init();
+
     this.currentInputType = 'MIC'; // Default
     this.animate();
+  }
+
+  updateAuthUI(user, isPaid) {
+    const statusEl = document.getElementById('authStatus');
+    const loginBtn = document.getElementById('loginBtn');
+    const upgradeBtn = document.getElementById('upgradeBtn');
+
+    if (user) {
+      if (statusEl) statusEl.innerHTML = `Logged in as: ${user.email.split('@')[0]} (${isPaid ? 'PRO' : 'FREE'})`;
+      if (loginBtn) loginBtn.style.display = 'none';
+      if (upgradeBtn) {
+        upgradeBtn.innerText = isPaid ? '💎 PRO MEMBER' : '💎 UPGRADE TO PRO';
+        upgradeBtn.style.display = isPaid ? 'none' : 'block';
+      }
+    } else {
+      if (statusEl) statusEl.innerText = 'Not logged in';
+      if (loginBtn) loginBtn.style.display = 'block';
+      if (upgradeBtn) upgradeBtn.style.display = 'none';
+    }
+  }
+
+  refreshPaidVisuals() {
+    const toggleBtn = document.getElementById('toggleHudBtn');
+    const watermark = document.getElementById('watermark');
+    const uiMark = document.getElementById('ui-mark');
+
+    if (this.isPaid) {
+      document.body.classList.add('is-paid');
+      if (toggleBtn) toggleBtn.classList.remove('reveal');
+      if (watermark) watermark.style.display = 'none';
+      if (uiMark) uiMark.classList.remove('reveal');
+    } else {
+      document.body.classList.remove('is-paid');
+      if (watermark) watermark.style.display = 'flex';
+    }
+  }
+
+  togglePaidStatus() {
+    // For Debug/Demo: toggle without firebase
+    this.isPaid = !this.isPaid;
+    this.refreshPaidVisuals();
+    this.showModal(this.isPaid ? 'Paid Version Activated' : 'Free Version Activated');
+  }
+
+  showModal(message) {
+    // Create custom modal instead of alert
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      border: 2px solid #ff00ff;
+      padding: 30px 40px;
+      border-radius: 15px;
+      z-index: 10000;
+      color: white;
+      font-size: 1.2rem;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+    `;
+    modal.innerHTML = `
+      <div>${message}</div>
+      <button id="modalOkBtn" style="
+        margin-top: 20px;
+        padding: 10px 30px;
+        background: linear-gradient(45deg, #ff00ff, #00ffff);
+        border: none;
+        border-radius: 25px;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 1rem;
+      ">OK</button>
+    `;
+    document.body.appendChild(modal);
+
+    const okBtn = document.getElementById('modalOkBtn');
+    okBtn.addEventListener('click', () => {
+      document.body.removeChild(modal);
+    });
   }
 
   performAutoSwitch() {
@@ -35,7 +127,10 @@ class App {
     overlay.id = 'overlay';
     overlay.innerHTML = `
       <div class="content">
-        <h1>Multi-Polygon VJ | Auto Visualizer</h1>
+        <div class="logo-container">
+          <img src="logo.png" class="logo-img" alt="DeepVisual Logo">
+          <h1 style="margin-top: 10px;">DeepVisual VJ</h1>
+        </div>
         <div class="guide" style="text-align: left; margin: 20px auto; max-width: 400px; line-height: 1.6; color: #ccc;">
             <h3>Mode Guide:</h3>
             <ul style="list-style: none; padding: 0;">
@@ -48,11 +143,17 @@ class App {
                 <li><strong>Mode 7 (TVStatic):</strong> Noise & Glitch textures.</li>
             </ul>
         </div>
+        <div id="authStatus" style="font-size: 0.8rem; color: #ff00ff; margin-bottom: 10px;">Checking status...</div>
+        <button id="loginBtn" style="margin-bottom: 20px; font-size: 0.9rem; padding: 10px 20px;">Google Login</button>
         <button id="startBtn">START VJ</button>
-        <p style="font-size: 0.8rem; opacity: 0.7;">Mic & MIDI Permission Required</p>
+        <p style="font-size: 0.8rem; opacity: 0.7; margin-top: 15px;">Mic & MIDI Permission Required</p>
       </div>
     `;
     document.body.appendChild(overlay);
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      authManager.login();
+    });
 
     document.getElementById('startBtn').addEventListener('click', () => {
       this.start();
@@ -150,7 +251,7 @@ class App {
                     ℹ️ Bluetooth MIDI: Pair via OS then reload
                 </div>
                 <div class="control-row">
-                    <button id="showCCMapping" style="width:100%; font-size:0.8rem;">CC Mapping Settings</button>
+                    <button id="showCCMapping">CC Mapping Settings</button>
                 </div>
             </div>
         </div>
@@ -184,6 +285,11 @@ class App {
         </div>
 
         <div id="midiMonitor" style="margin-top:5px; font-size:10px; color:#888;">Waiting for MIDI...</div>
+        
+        <div style="margin-top:20px; width:100%; border-top:1px dashed rgba(255,255,255,0.1); padding-top:15px;">
+          <button id="upgradeBtn" class="paid-hidden" style="width:100%; font-size:0.8rem; background:linear-gradient(45deg, #ff00ff, #00ffff); color:white; border:none; box-shadow: 0 0 10px rgba(0,255,255,0.3);">💎 UPGRADE TO PRO</button>
+          <button id="debugPaidToggle" style="width:100%; font-size:0.6rem; opacity:0.3; margin-top:5px; background:none; border:none;">(Debug: Toggle Paid Status)</button>
+        </div>
     `;
     document.body.appendChild(hud);
 
@@ -192,7 +298,44 @@ class App {
     toggleBtn.id = 'toggleHudBtn';
     toggleBtn.innerText = 'UI';
     document.body.appendChild(toggleBtn);
-    toggleBtn.addEventListener('click', () => { hud.classList.toggle('hidden'); });
+    toggleBtn.addEventListener('click', (e) => {
+      hud.classList.toggle('hidden');
+      e.stopPropagation();
+    });
+
+    // Paid Mode interaction: Show UI button on screen click
+    window.addEventListener('mousedown', (e) => {
+      if (!this.isPaid) return;
+
+      // If clicking HUD or toggleBtn or other modals, don't toggle
+      const modals = document.querySelectorAll('#ccMappingModal, .tap-overlay');
+      let onModal = false;
+      modals.forEach(m => { if (m.contains(e.target)) onModal = true; });
+      if (hud.contains(e.target) || toggleBtn.contains(e.target) || onModal) return;
+
+      // Toggle reveal class
+      toggleBtn.classList.toggle('reveal');
+      const uiMark = document.getElementById('ui-mark');
+      if (uiMark) uiMark.classList.toggle('reveal');
+    });
+
+    // Watermark & UI Mark
+    const watermark = document.createElement('div');
+    watermark.id = 'watermark';
+    // Remove paid-hidden class to allow reveal logic via CSS if needed, 
+    // but typically watermark is hidden in paid. 
+    // We'll manage its visibility in style.css instead.
+    watermark.innerHTML = `
+      <img src="logo.png" class="watermark-logo">
+      <span class="watermark-text">DeepVisual VJ FREE</span>
+    `;
+    document.body.appendChild(watermark);
+
+    const uiMark = document.createElement('div');
+    uiMark.id = 'ui-mark';
+    // Removed paid-hidden class to allow reveal logic via CSS
+    uiMark.innerText = 'UI MARK';
+    document.body.appendChild(uiMark);
 
     // Events
     document.getElementById('mainModeSelect').addEventListener('change', (e) => {
@@ -318,6 +461,34 @@ class App {
 
     // Restore MIDI settings
     document.getElementById('midiChannelSelect').value = this.midi.selectedChannel;
+
+    // Paid Logic Events
+    const upgradeBtn = document.getElementById('upgradeBtn');
+    if (upgradeBtn) {
+      upgradeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          if (!authManager || !authManager.user) {
+            this.showModal('Please login first to upgrade your account.');
+            return;
+          }
+          window.open('https://buy.stripe.com/00w5kEbSzfCx01b8vWbAs00', '_blank');
+        } catch (error) {
+          console.error('Upgrade button error:', error);
+          this.showModal('Please login first to upgrade your account.');
+        }
+      });
+    }
+
+    const debugToggle = document.getElementById('debugPaidToggle');
+    if (debugToggle) {
+      debugToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.togglePaidStatus();
+      });
+    }
 
     this.updateSubUI('3D');
 
@@ -459,15 +630,15 @@ class App {
         <div style="display:flex; align-items:center; margin:8px 0; font-size:0.85rem;">
           <span style="flex:1; color:#ccc;">${param.label}</span>
           <span id="ccMap_${param.key}" style="width:60px; text-align:center; color:#0f0;">${currentCC}</span>
-          <button class="learnBtn" data-param="${param.key}" style="margin-left:10px; font-size:0.7rem; padding:3px 10px;">Learn</button>
+          <button class="learnBtn cc-learn-btn" data-param="${param.key}">Learn</button>
         </div>
       `;
     });
 
     html += '</div>';
     html += '<div style="display:flex; gap:10px; margin-top:15px;">';
-    html += '<button id="resetCCMapping" style="flex:1; padding:8px;">Reset to Default</button>';
-    html += '<button id="closeCCMapping" style="flex:1; padding:8px; background:#444;">Close</button>';
+    html += '<button id="resetCCMapping" class="cc-modal-btn">Reset to Default</button>';
+    html += '<button id="closeCCMapping" class="cc-modal-btn cc-close-btn">Close</button>';
     html += '</div>';
 
     modal.innerHTML = html;

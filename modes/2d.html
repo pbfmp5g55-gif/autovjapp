@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Mode - DeepVisual VJ</title>
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6590253658108388"
+        crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --text-color: #ffffff;
+            --accent-cyan: #00ffff;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Outfit', sans-serif;
+            line-height: 1.8;
+        }
+
+        header {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: var(--accent-cyan);
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .visual-preview {
+            width: 100%;
+            height: 500px;
+            background: #111;
+            border-radius: 20px;
+            margin: 40px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .visual-preview::after {
+            content: '2D MODE PREVIEW';
+            color: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+            font-size: 2rem;
+        }
+
+        .description {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 50px;
+        }
+
+        .feature-item h3 {
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+        }
+
+        .midi-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 50px;
+            background: var(--glass-bg);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .midi-table th,
+        .midi-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .midi-table th {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .cta-footer {
+            text-align: center;
+            margin: 100px 0;
+        }
+
+        .launch-btn {
+            padding: 20px 60px;
+            background: var(--accent-cyan);
+            color: #000;
+            text-decoration: none;
+            font-weight: 900;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            transition: 0.3s;
+        }
+
+        .launch-btn:hover {
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            transform: scale(1.05);
+        }
+
+        .ad-space {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            text-align: center;
+            margin: 40px 0;
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <a href="../index.html" class="back-link">← BACK TO TOP</a>
+        <div style="font-weight: bold; letter-spacing: 2px;">DEEPVISUAL</div>
+    </header>
+
+    <div class="container">
+        <h1>3: 2D Mode</h1>
+        <p class="description">
+            p5.jsを使った有機的なジェネラティブアート。<br>
+            ノイズフィールドとパーティクルシステムが織りなす、流れるような美しいビジュアルを生成します。
+        </p>
+
+        <div class="visual-preview">
+            <!-- スクリーンショットをここに挿入 -->
+        </div>
+
+        <!-- Ad Space -->
+        <div class="ad-space">
+            Advertisement Space
+        </div>
+
+        <h2>Features</h2>
+        <div class="feature-list">
+            <div class="feature-item">
+                <h3>Generative Art</h3>
+                <p>Perlinノイズアルゴリズムを使用した、自然で有機的なパターン生成。毎回異なる表情を見せます。</p>
+            </div>
+            <div class="feature-item">
+                <h3>Particle Constellations</h3>
+                <p>数千のパーティクルが音楽に反応して動き、星座のような美しい軌跡を描きます。</p>
+            </div>
+            <div class="feature-item">
+                <h3>Flow Fields</h3>
+                <p>ベクトル場に沿って流れるパーティクル。音楽の低音で渦を巻き、高音で拡散します。</p>
+            </div>
+            <div class="feature-item">
+                <h3>Elegant Aesthetics</h3>
+                <p>深いブルーとパープルを基調とした、エレガントで洗練されたカラーパレット。</p>
+            </div>
+        </div>
+
+        <h2>MIDI Controls</h2>
+        <table class="midi-table">
+            <thead>
+                <tr>
+                    <th>CC Number</th>
+                    <th>Parameter</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CC 1</td>
+                    <td>Intensity</td>
+                    <td>パーティクルの動きの激しさ</td>
+                </tr>
+                <tr>
+                    <td>CC 2</td>
+                    <td>Hue</td>
+                    <td>色相のシフト</td>
+                </tr>
+                <tr>
+                    <td>CC 3</td>
+                    <td>Speed</td>
+                    <td>フローフィールドの速度</td>
+                </tr>
+                <tr>
+                    <td>CC 4</td>
+                    <td>FX Amount</td>
+                    <td>ノイズの複雑さ</td>
+                </tr>
+                <tr>
+                    <td>CC 5</td>
+                    <td>Trails</td>
+                    <td>軌跡の長さ</td>
+                </tr>
+                <tr>
+                    <td>CC 9</td>
+                    <td>Particle Density</td>
+                    <td>パーティクルの密度</td>
+                </tr>
+                <tr>
+                    <td>CC 11</td>
+                    <td>Noise Scale</td>
+                    <td>ノイズのスケール</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Ad Space -->
+        <div class="ad-space">
+            Advertisement Space
+        </div>
+
+        <h2>Best Use Cases</h2>
+        <ul style="font-size: 1.1rem; line-height: 2;">
+            <li><strong>アンビエント音楽</strong>：ゆったりとした電子音楽に最適</li>
+            <li><strong>チルアウトセット</strong>：リラックスした雰囲気を演出</li>
+            <li><strong>アート展示</strong>：インスタレーションとしても使用可能</li>
+            <li><strong>瞑想・ヨガ</strong>：穏やかな視覚体験を提供</li>
+        </ul>
+
+        <div class="cta-footer">
+            <a href="../vj.html" class="launch-btn">TRY THIS MODE NOW</a>
+        </div>
+    </div>
+
+</body>
+
+</html>

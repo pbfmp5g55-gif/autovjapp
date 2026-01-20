@@ -2,25 +2,247 @@
 <html lang="ja">
 
 <head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <link rel="manifest" href="/autovjapp/manifest.json">
-  <link rel="apple-touch-icon" href="/autovjapp/icon-512.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>DeepVisual VJ</title>
-  <link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepVisual VJ - Top</title>
+
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6590253658108388"
     crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg-color: #050505;
+      --text-color: #ffffff;
+      --accent-magenta: #ff00ff;
+      --accent-cyan: #00ffff;
+      --glass-bg: rgba(255, 255, 255, 0.05);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Hero Section */
+    .hero {
+      height: 50vh;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+      position: relative;
+      text-align: center;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.1), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      margin: 0;
+      background: linear-gradient(to right, var(--accent-magenta), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 900;
+      letter-spacing: -2px;
+    }
+
+    .hero p {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin-top: 8px;
+      max-width: 600px;
+    }
+
+    .cta-btn {
+      margin-top: 20px;
+      padding: 14px 35px;
+      font-size: 1rem;
+      font-weight: bold;
+      text-decoration: none;
+      color: white;
+      background: linear-gradient(90deg, var(--accent-magenta), var(--accent-cyan));
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 30px rgba(255, 0, 255, 0.3);
+    }
+
+    .cta-btn:hover {
+      transform: scale(1.05) translateY(-3px);
+      box-shadow: 0 15px 40px rgba(0, 255, 255, 0.4);
+    }
+
+    /* Modes Section */
+    .section-title {
+      text-align: center;
+      padding: 40px 0 20px;
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .modes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      max-width: 1200px;
+      margin: 0 auto 30px;
+      padding: 0 20px;
+    }
+
+    .mode-card {
+      background: var(--glass-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 140px;
+    }
+
+    .mode-card:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent-cyan);
+      transform: translateY(-10px);
+    }
+
+    .mode-card h3 {
+      font-size: 1.2rem;
+      margin: 0 0 6px 0;
+      color: var(--accent-cyan);
+    }
+
+    .mode-card p {
+      opacity: 0.7;
+      line-height: 1.4;
+      margin: 6px 0;
+      font-size: 0.85rem;
+    }
+
+    .learn-more {
+      font-weight: bold;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-magenta);
+      display: flex;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .learn-more::after {
+      content: ' →';
+      margin-left: 5px;
+    }
+
+    footer {
+      padding: 30px;
+      text-align: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      opacity: 0.5;
+      font-size: 0.85rem;
+    }
+  </style>
 </head>
 
 <body>
-  <div id="p5-container" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:1; display:none;"></div>
-  <div id="app"></div>
-  <script type="module" src="/src/main.js"></script>
+
+  <section class="hero">
+    <h1>DeepVisual VJ</h1>
+    <p>A next-generation generative visual experience powered by WebGL & MIDI.</p>
+    <a href="./vj.html" class="cta-btn">LAUNCH APP</a>
+  </section>
+
+  <h2 class="section-title">Explore Modes</h2>
+
+  <div class="modes-grid">
+    <!-- 3D Mode -->
+    <a href="./modes/3d.html" class="mode-card">
+      <div>
+        <h3>1: 3D Mode</h3>
+        <p>Geometric abstractions that pulse and evolve with your music. Ideal for rhythmic heavy sets.</p>
+      </div>
+      <div class="learn-more">Learn Detail</div>
+    </a>
+
+    <!-- Photo Mode -->
+    <a href="./modes/photo.html" class="mode-card">
+      <div>
+        <h3>2: Photo Mode</h3>
+        <p>Convert your images into dynamic 2.5D polygon landscapes using Delaunay triangulation.</p>
+      </div>
+      <div class="learn-more">Learn Detail</div>
+    </a>
+
+    <!-- 2D Mode -->
+    <a href="./modes/2d.html" class="mode-card">
+      <div>
+        <h3>3: 2D Mode</h3>
+        <p>Elegant noise fields and particle systems inspired by organic constellations and flow.</p>
+      </div>
+      <div class="learn-more">Learn Detail</div>
+    </a>
+
+    <!-- Shader Mode -->
+    <a href="./modes/shader.html" class="mode-card">
+      <div>
+        <h3>4: Shader FX</h3>
+        <p>High-energy GLSL shaders featuring kaleidoscopes, glitches, and psychedelic patterns.</p>
+      </div>
+      <div class="learn-more">Learn Detail</div>
+    </a>
+
+    <!-- Video Mode -->
+    <a href="./modes/video.html" class="mode-card">
+      <div>
+        <h3>5: Video Mode</h3>
+        <p>Professional video deck mixing with MIDI trigger support and real-time transition effects.</p>
+      </div>
+      <div class="learn-more">Learn Detail</div>
+    </a>
+
+    <!-- HoloBlob Mode -->
+    <a href="./modes/holoblob.html" class="mode-card">
+      <div>
+        <h3>6: HoloBlob</h3>
+        <p>Futuristic raymarching abstract forms. Iridescent materials that react to audio texture.</p>
+      </div>
+      <div class="learn-more">Learn Detail</div>
+    </a>
+
+    <!-- TV Static Mode -->
+    <a href="./modes/tvstatic.html" class="mode-card">
+      <div>
+        <h3>7: TV Static</h3>
+        <p>Analog TV noise and glitch effects. Retro-futuristic VHS aesthetic with high contrast.</p>
+      </div>
+      <div class="learn-more">Learn Detail</div>
+    </a>
+  </div>
+
+  <footer>
+    &copy; 2026 DeepVisual. All rights reserved.
+  </footer>
+
 </body>
 
 </html>

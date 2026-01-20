@@ -79,9 +79,10 @@ button {
   transition: all 0.2s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-weight: 600;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  /* 文字の視認性を向上 */
   opacity: 1.0 !important;
-  /* Force visible */
 }
 
 button:hover {
@@ -151,6 +152,12 @@ select {
   flex: 1;
 }
 
+select option {
+  background: #1a1a1a;
+  color: white;
+  padding: 8px;
+}
+
 select:hover {
   border-color: var(--color-accent);
   background: rgba(255, 255, 255, 0.25);
@@ -194,6 +201,29 @@ select:hover {
   color: #e0ffe0;
   box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
   font-weight: bold;
+}
+
+/* INITIAL OVERLAY STYLES */
+#loginBtn {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ff00ff !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.4) !important;
+}
+
+#loginBtn:hover {
+  background: #ff00ff !important;
+  color: #ffffff !important;
+  transform: scale(1.05);
+}
+
+#authStatus {
+  color: #ff55ff !important;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
 }
 
 .input-btn.active.file {
@@ -270,6 +300,18 @@ select:hover {
   background: #444;
   border-color: white;
   transform: scale(1.1);
+}
+
+/* Paid Mode specific for the toggle button */
+body.is-paid #toggleHudBtn {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.3s ease;
+}
+
+body.is-paid #toggleHudBtn.reveal {
+  opacity: 1 !important;
+  pointer-events: auto;
 }
 
 /* MIDI MONITOR */
@@ -430,4 +472,173 @@ select:hover {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* WATERMARK & LOGO */
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logo-img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px var(--color-accent-dim));
+  margin-bottom: 10px;
+}
+
+#watermark {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+/* Hide watermark in Paid version */
+body.is-paid #watermark {
+  display: none;
+}
+
+.watermark-logo {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+}
+
+.watermark-text {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Paid Version logic */
+body.is-paid .paid-hidden {
+  display: none !important;
+}
+
+/* UI Mark in watermark area */
+#ui-mark {
+  position: fixed;
+  bottom: 20px;
+  right: 70px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  opacity: 0.5;
+  z-index: 5;
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: opacity 0.5s ease;
+}
+
+/* Paid Mode specific for UI Mark */
+body.is-paid #ui-mark {
+  opacity: 0 !important;
+  transition: opacity 0.5s ease;
+}
+
+body.is-paid #ui-mark.reveal {
+  opacity: 0.5 !important;
+  pointer-events: auto;
+}
+
+/* Upgrade Button specific contrast fix */
+#upgradeBtn {
+  color: #fff !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+  letter-spacing: 1.5px;
+  border: none !important;
+  transition: transform 0.2s, box-shadow 0.2s !important;
+}
+
+#upgradeBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4) !important;
+  filter: brightness(1.1);
+}
+
+/* Small UI buttons like Show/Hide */
+#toggleMidiSettings {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #0ff !important;
+  /* 目立たせるためにシアンに */
+}
+
+#toggleMidiSettings:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #fff !important;
+}
+
+/* CC MAPPING SETTINGS Button - Same style as SHOW/HIDE (Correct ID: showCCMapping) */
+#showCCMapping {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #0ff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  padding: 12px 30px !important;
+  font-size: 1.1rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+}
+
+#showCCMapping:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: #0ff !important;
+  color: #fff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* CC Mapping Modal Buttons */
+.cc-learn-btn {
+  margin-left: 10px !important;
+  font-size: 0.7rem !important;
+  padding: 3px 10px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #0ff !important;
+}
+
+.cc-learn-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: #0ff !important;
+  color: #fff !important;
+}
+
+.cc-modal-btn {
+  flex: 1 !important;
+  padding: 8px !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #0ff !important;
+  font-weight: 600 !important;
+}
+
+.cc-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: #0ff !important;
+  color: #fff !important;
+}
+
+.cc-close-btn {
+  background: rgba(68, 68, 68, 0.8) !important;
+  color: #fff !important;
+}
+
+.cc-close-btn:hover {
+  background: rgba(85, 85, 85, 0.9) !important;
+  border-color: #fff !important;
 }

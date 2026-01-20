@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "delaunator": "^5.0.1",
+    "firebase": "^12.8.0",
     "p5": "^2.1.2",
     "three": "^0.182.0"
   }
